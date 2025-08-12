@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
-import { Sparkles, Plus } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormDescription } from '@/components/ui/form';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Sparkles, Plus, X, BookOpen, Video, Image, Globe, Target, Zap } from 'lucide-react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CoursePreview from '@/components/CoursePreview';
@@ -99,9 +101,13 @@ const GenerateCourse = () => {
 
   const fetchUserPlanLimits = async () => {
     try {
-      // Always use the valid admin user ID for now
-      const userId = 'cme8wuprz0000mqz0oeko02q4';
-      console.log('Using admin user ID:', userId);
+      // Use the currently logged-in user's ID
+      const userId = sessionStorage.getItem('uid');
+      if (!userId) {
+        console.error('No user ID found in session storage');
+        return;
+      }
+      console.log('Using current user ID:', userId);
 
       console.log('Sending request to /api/user-plan-limits with userId:', userId);
       const response = await axios.post(`${serverURL}/api/user-plan-limits`, {
@@ -146,7 +152,6 @@ const GenerateCourse = () => {
       });
     }
   };
-
 
   const addSubtopic = () => {
     if (subtopics.length < userPlanLimits.maxSubtopics) {
@@ -284,89 +289,163 @@ const GenerateCourse = () => {
         description="Create a customized AI-generated course"
         keywords="course generation, AI learning, custom education"
       />
-      <div className="space-y-8 animate-fade-in max-w-3xl mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-gradient bg-gradient-to-r from-primary to-indigo-500 mb-4">Generate Course</h1>
-          <p className="text-muted-foreground max-w-lg mx-auto">
-            Type the topic on which you want to Generate course.
-            Also, you can enter a list of subtopics, which are the
-            specifics you want to learn.
-          </p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          {/* Header Section */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight mb-4 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Generate Your Course
+            </h1>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
+              Create a personalized AI-generated course tailored to your learning needs. 
+              Simply enter your topic and let our AI build a comprehensive learning experience.
+            </p>
+          </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-6">
+          {/* Plan Limits Info */}
+          {!paidMember && (
+            <Card className="mb-6 border-primary/20 bg-primary/5">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Target className="h-5 w-5 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Free Plan Limits</p>
+                    <p className="text-xs text-muted-foreground">
+                      {userPlanLimits.maxTopics} topics • {userPlanLimits.maxSubtopics} subtopics • {userPlanLimits.languages.length} language{userPlanLimits.languages.length > 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={paidToad}>
+                    Upgrade
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Main Topic Section */}
+              <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    Course Topic
+                  </CardTitle>
+                  <CardDescription>
+                    Enter the main subject you want to learn about
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <FormField
                     control={form.control}
                     name="topic"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Topic</FormLabel>
+                        <FormLabel className="text-base font-medium">Main Topic</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter main topic" {...field} />
+                          <Input 
+                            placeholder="e.g., JavaScript Programming, Digital Marketing, Photography" 
+                            className="h-12 text-base"
+                            {...field} 
+                          />
                         </FormControl>
+                        <FormDescription>
+                          Be specific about what you want to learn
+                        </FormDescription>
                       </FormItem>
                     )}
                   />
+                </CardContent>
+              </Card>
 
-                  <div className="space-y-2">
-                    <FormLabel>Sub Topic (Optional)</FormLabel>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Enter subtopic"
-                        value={subtopicInput}
-                        onChange={(e) => setSubtopicInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addSubtopic();
-                          }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        onClick={addSubtopic}
-                        className="bg-black text-white hover:bg-gray-800"
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Sub-Topic
-                      </Button>
-                    </div>
+              {/* Subtopics Section */}
+              <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-primary" />
+                    Specific Topics (Optional)
+                  </CardTitle>
+                  <CardDescription>
+                    Add specific subtopics you want to include in your course
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="e.g., Variables, Functions, Arrays"
+                      value={subtopicInput}
+                      onChange={(e) => setSubtopicInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addSubtopic();
+                        }
+                      }}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={addSubtopic}
+                      className="bg-primary hover:bg-primary/90"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add
+                    </Button>
+                  </div>
 
-                    {subtopics.length > 0 && (
-                      <div className="mt-3 space-y-2">
+                  {subtopics.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Added Topics ({subtopics.length}/{userPlanLimits.maxSubtopics})
+                      </p>
+                      <div className="flex flex-wrap gap-2">
                         {subtopics.map((topic, index) => (
-                          <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-md">
-                            <span className="text-sm">{topic}</span>
+                          <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                            {topic}
                             <Button
-                            type="button"
+                              type="button"
                               variant="ghost"
                               size="sm"
-                              className="ml-auto h-7 w-7 p-0"
+                              className="h-4 w-4 p-0 hover:bg-destructive/10 hover:text-destructive"
                               onClick={() => {
                                 const newSubtopics = subtopics.filter((_, i) => i !== index);
                                 setSubtopics(newSubtopics);
                                 form.setValue('subtopics', newSubtopics);
                               }}
                             >
-                              ×
+                              <X className="h-3 w-3" />
                             </Button>
-                          </div>
+                          </Badge>
                         ))}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
+              {/* Course Configuration Section */}
+              <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-primary" />
+                    Course Configuration
+                  </CardTitle>
+                  <CardDescription>
+                    Customize your course settings and preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Number of Topics */}
                   <div>
-                    <FormLabel>Select Number Of Sub Topic</FormLabel>
+                    <FormLabel className="text-base font-medium">Number of Topics</FormLabel>
                     <FormField
                       control={form.control}
                       name="topicsLimit"
                       render={({ field }) => (
-                        <FormItem className="mt-2">
+                        <FormItem className="mt-3">
                           <FormControl>
                             <RadioGroup
                               value={selectedValue}
@@ -374,18 +453,24 @@ const GenerateCourse = () => {
                                 setSelectedValue(selectedValue);
                                 field.onChange(selectedValue);
                               }}
-                              className="space-y-2"
+                              className="grid grid-cols-2 gap-3"
                             >
                               {userPlanLimits.maxTopics >= 4 && (
-                                <div className="flex items-center space-x-2 border p-3 rounded-md">
+                                <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                                   <RadioGroupItem value="4" id="r1" />
-                                  <FormLabel htmlFor="r1" className="mb-0">4 Topics</FormLabel>
+                                  <div className="flex-1">
+                                    <FormLabel htmlFor="r1" className="text-base font-medium cursor-pointer">4 Topics</FormLabel>
+                                    <p className="text-sm text-muted-foreground">Standard course length</p>
+                                  </div>
                                 </div>
                               )}
                               {userPlanLimits.maxTopics >= 8 && (
-                                <div className="flex items-center space-x-2 border p-3 rounded-md">
+                                <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                                   <RadioGroupItem value="8" id="r2" />
-                                  <FormLabel htmlFor="r2" className="mb-0">8 Topics</FormLabel>
+                                  <div className="flex-1">
+                                    <FormLabel htmlFor="r2" className="text-base font-medium cursor-pointer">8 Topics</FormLabel>
+                                    <p className="text-sm text-muted-foreground">Comprehensive course</p>
+                                  </div>
                                 </div>
                               )}
                             </RadioGroup>
@@ -395,13 +480,16 @@ const GenerateCourse = () => {
                     />
                   </div>
 
+                  <Separator />
+
+                  {/* Course Type */}
                   <div>
-                    <FormLabel>Select Course Type</FormLabel>
+                    <FormLabel className="text-base font-medium">Course Type</FormLabel>
                     <FormField
                       control={form.control}
                       name="courseType"
                       render={({ field }) => (
-                        <FormItem className="mt-2">
+                        <FormItem className="mt-3">
                           <FormControl>
                             <RadioGroup
                               value={selectedType}
@@ -409,18 +497,36 @@ const GenerateCourse = () => {
                                 setSelectedType(selectedValue);
                                 field.onChange(selectedValue);
                               }}
-                              className="space-y-2"
+                              className="grid grid-cols-1 gap-3"
                             >
                               {userPlanLimits.courseTypes.includes("Text & Image Course") && (
-                                <div className="flex items-center space-x-2 border p-3 rounded-md">
+                                <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                                   <RadioGroupItem value="Text & Image Course" id="ct1" />
-                                  <FormLabel htmlFor="ct1" className="mb-0">Theory & Image Course</FormLabel>
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <Image className="h-5 w-5 text-blue-500" />
+                                      <BookOpen className="h-5 w-5 text-green-500" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <FormLabel htmlFor="ct1" className="text-base font-medium cursor-pointer">Text & Image Course</FormLabel>
+                                      <p className="text-sm text-muted-foreground">Learn with written content and visual examples</p>
+                                    </div>
+                                  </div>
                                 </div>
                               )}
                               {userPlanLimits.courseTypes.includes("Video & Text Course") && (
-                                <div className="flex items-center space-x-2 border p-3 rounded-md">
+                                <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                                   <RadioGroupItem value="Video & Text Course" id="ct2" />
-                                  <FormLabel htmlFor="ct2" className="mb-0">Video & Theory Course</FormLabel>
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <Video className="h-5 w-5 text-red-500" />
+                                      <BookOpen className="h-5 w-5 text-green-500" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <FormLabel htmlFor="ct2" className="text-base font-medium cursor-pointer">Video & Text Course</FormLabel>
+                                      <p className="text-sm text-muted-foreground">Learn with video lessons and written explanations</p>
+                                    </div>
+                                  </div>
                                 </div>
                               )}
                             </RadioGroup>
@@ -430,18 +536,21 @@ const GenerateCourse = () => {
                     />
                   </div>
 
+                  <Separator />
+
+                  {/* Language Selection */}
                   <FormField
                     control={form.control}
                     name="language"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Course Language</FormLabel>
+                        <FormLabel className="text-base font-medium">Course Language</FormLabel>
                         <Select onValueChange={(selectedValue) => {
                           setLang(selectedValue);
                           field.onChange(selectedValue);
                         }} value={lang}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="h-12">
                               <SelectValue placeholder="Select language" />
                             </SelectTrigger>
                           </FormControl>
@@ -449,27 +558,47 @@ const GenerateCourse = () => {
                             {languages
                               .filter(country => userPlanLimits.languages.includes(country.name))
                               .map((country) => (
-                                <SelectItem key={country.code} value={country.name}>{country.name}</SelectItem>
+                                <SelectItem key={country.code} value={country.name}>
+                                  <div className="flex items-center gap-2">
+                                    <Globe className="h-4 w-4" />
+                                    {country.name}
+                                  </div>
+                                </SelectItem>
                               ))}
                           </SelectContent>
                         </Select>
+                        <FormDescription>
+                          Choose the language for your course content
+                        </FormDescription>
                       </FormItem>
                     )}
                   />
+                </CardContent>
+              </Card>
 
-                  <Button
-                    onClick={() => onSubmit}
-                    type="submit"
-                    className="w-full bg-black text-white hover:bg-gray-800"
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Submit
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </form>
-        </Form>
+              {/* Generate Button */}
+              <div className="pt-4">
+                <Button
+                  type="submit"
+                  className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Generating Course...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      Generate My Course
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </div>
     </>
   );

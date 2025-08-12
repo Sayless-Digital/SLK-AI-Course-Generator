@@ -10,7 +10,7 @@ async function addAdmin() {
     // Create admin user
     const adminUser = await prisma.user.create({
       data: {
-        email: 'admin@example.com',
+        email: 'admin@myslk.online',
         mName: 'Admin User',
         password: 'admin123',
         type: 'forever'
@@ -20,14 +20,14 @@ async function addAdmin() {
     // Create admin record
     const admin = await prisma.admin.create({
       data: {
-        email: 'admin@example.com',
+        email: 'admin@myslk.online',
         mName: 'Admin User',
         type: 'main'
       }
     });
 
     console.log('Admin user created successfully:');
-    console.log('Email: admin@example.com');
+    console.log('Email: admin@myslk.online');
     console.log('Password: admin123');
     console.log('User ID:', adminUser.id);
     console.log('Admin ID:', admin.id);

@@ -44,6 +44,7 @@ import {
   FileSliders,
   Banknote,
   Settings,
+  Brain,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -361,6 +362,18 @@ const AdminLayout = () => {
                         >
                           <Settings className="h-3 w-3" />
                           <span>General Settings</span>
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/settings/prompts" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/settings/prompts') && "bg-accent text-primary"
+                          )}
+                        >
+                          <Brain className="h-3 w-3" />
+                          <span>AI Prompt Settings</span>
                         </Link>
                       </div>
                     </AccordionContent>

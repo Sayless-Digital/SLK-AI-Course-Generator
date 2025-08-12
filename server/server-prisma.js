@@ -623,12 +623,26 @@ app.post('/api/courses', async (req, res) => {
 //GET COURSES
 app.get('/api/courses', async (req, res) => {
     try {
+        const { userId, page = 1, limit = 9 } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        
+        let whereClause = {};
+        if (userId) {
+            whereClause = { userId };
+        }
+
         const courses = await prisma.course.findMany({
+            where: whereClause,
             include: {
                 user: true,
                 notes: true,
                 exams: true,
                 languages: true
+            },
+            skip: skip,
+            take: parseInt(limit),
+            orderBy: {
+                createdAt: 'desc'
             }
         });
         res.json(courses);
@@ -1970,6 +1984,46 @@ app.post('/api/generate', async (req, res) => {
     });
 });
 
+//CHAT
+app.post('/api/chat', async (req, res) => {
+    const receivedData = req.body;
+    const promptString = receivedData.prompt;
+
+    const safetySettings = [
+        {
+            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+    ];
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash", safetySettings });
+    const prompt = promptString;
+
+    await model.generateContent(prompt).then(result => {
+        const response = result.response;
+        const txt = response.text();
+        const converter = new showdown.Converter();
+        const markdownText = txt;
+        const text = converter.makeHtml(markdownText);
+        res.status(200).json({ success: true, text });
+    }).catch(error => {
+        console.log('Error', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    });
+});
+
 //GET IMAGE
 app.post('/api/image', async (req, res) => {
     const receivedData = req.body;
@@ -2229,7 +2283,7 @@ app.post('/api/savenotes', async (req, res) => {
                 data: { 
                     courseId: course, 
                     notes: notes,
-                    userId: 'cme8wuprz0000mqz0oeko02q4' // Use admin user as fallback
+                    userId: 'cme91g7990000mqyg4eto97lk' // Use admin user as fallback
                 }
             });
             res.json({ success: true, message: 'Notes created successfully' });
@@ -2269,6 +2323,129 @@ app.post('/api/sendcertificate', async (req, res) => {
             res.json({ success: true, message: 'Email sent successfully' });
         }
     });
+});
+
+//GET PROMPT SETTINGS
+app.get('/api/prompt-settings', async (req, res) => {
+    try {
+        console.log('GET /api/prompt-settings called');
+        
+        // For now, return default settings
+        // In a real implementation, you'd store these in a database
+        const defaultPrompts = {
+            courseStructure: {
+                name: 'Course Structure Generation',
+                description: 'Generates the initial course structure with topics and subtopics',
+                template: 'Strictly in {language}, Generate a list of Strict {topicCount} topics and any number sub topic for each topic for main title {mainTopic}, everything in single line. Those {topicCount} topics should Strictly include these topics :- {subtopics}. Strictly Keep theory, youtube, image field empty. Generate in the form of JSON in this format.',
+                variables: ['{language}', '{topicCount}', '{mainTopic}', '{subtopics}'],
+                enabled: true
+            },
+            theoryContent: {
+                name: 'Theory Content Generation',
+                description: 'Generates detailed explanations for subtopics with examples',
+                template: 'Strictly in {language}, Explain me about this subtopic of {mainTopic} with examples :- {subtopic}. Please Strictly Don\'t Give Additional Resources And Images.',
+                variables: ['{language}', '{mainTopic}', '{subtopic}'],
+                enabled: true
+            },
+            imageGeneration: {
+                name: 'Image Generation',
+                description: 'Generates relevant images for subtopics',
+                template: 'Example of {subtopic} in {mainTopic}',
+                variables: ['{subtopic}', '{mainTopic}'],
+                enabled: true
+            },
+            quizGeneration: {
+                name: 'Quiz/Exam Generation',
+                description: 'Generates MCQ quizzes based on course content',
+                template: 'Strictly in {language}, generate a strictly 10 question MCQ quiz on title {mainTopic} based on each topics :- {subtopicsString}, Atleast One question per topic. Add options A, B, C, D and only one correct answer.',
+                variables: ['{language}', '{mainTopic}', '{subtopicsString}'],
+                enabled: true
+            },
+            videoSearch: {
+                name: 'Video Search Query',
+                description: 'Generates search queries for finding relevant videos',
+                template: '{subtopic} {mainTopic} in {language}',
+                variables: ['{subtopic}', '{mainTopic}', '{language}'],
+                enabled: true
+            }
+        };
+
+        const defaultAiModel = {
+            model: 'gemini-2.0-flash',
+            temperature: 0.7,
+            maxTokens: 4000,
+            safetySettings: {
+                harassment: 'BLOCK_MEDIUM_AND_ABOVE',
+                hateSpeech: 'BLOCK_MEDIUM_AND_ABOVE',
+                sexuallyExplicit: 'BLOCK_MEDIUM_AND_ABOVE',
+                dangerousContent: 'BLOCK_MEDIUM_AND_ABOVE'
+            }
+        };
+
+        console.log('Sending response');
+        res.json({ 
+            success: true, 
+            prompts: defaultPrompts,
+            aiModel: defaultAiModel
+        });
+    } catch (error) {
+        console.log('Error in prompt-settings:', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
+
+//SAVE PROMPT SETTINGS
+app.post('/api/prompt-settings', async (req, res) => {
+    try {
+        const { prompts, aiModel } = req.body;
+        
+        // In a real implementation, you'd save these to a database
+        // For now, we'll just log them and return success
+        console.log('Saving prompt settings:', { prompts, aiModel });
+        
+        // You could save to a file or database here
+        // For example, using fs.writeFileSync for file storage:
+        // const fs = require('fs');
+        // fs.writeFileSync('./prompt-settings.json', JSON.stringify({ prompts, aiModel }));
+        
+        res.json({ success: true, message: 'Prompt settings saved successfully' });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
+
+//GET RESULT
+app.post('/api/getmyresult', async (req, res) => {
+    const { courseId } = req.body;
+    try {
+        console.log('Getting result for course:', courseId);
+        
+        const existingNotes = await prisma.exam.findFirst({ 
+            where: { courseId: courseId } 
+        });
+        const lang = await prisma.language.findFirst({ 
+            where: { courseId: courseId } 
+        });
+        
+        if (existingNotes) {
+            if (lang) {
+                res.json({ success: true, message: existingNotes.passed, lang: lang.lang });
+            } else {
+                res.json({ success: true, message: existingNotes.passed, lang: 'English' });
+            }
+        } else {
+            if (lang) {
+                res.json({ success: false, message: false, lang: lang.lang });
+            } else {
+                res.json({ success: false, message: false, lang: 'English' });
+            }
+        }
+
+    } catch (error) {
+        console.log('Error in getmyresult:', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 // Health check endpoint

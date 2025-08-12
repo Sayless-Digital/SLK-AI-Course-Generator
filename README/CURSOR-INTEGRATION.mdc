@@ -3,3 +3,161 @@ description:
 globs:
 alwaysApply: false
 ---
+# 🤖 Cursor AI Integration Guide
+
+## 📝 .mdc Format for Cursor AI
+
+This project uses `.mdc` (Markdown with Cursor) format for all documentation files to optimize Cursor AI integration and automatic recognition.
+
+## 🎯 Benefits of .mdc Format
+
+### **✅ Automatic Recognition**
+- Cursor AI automatically recognizes `.mdc` files as documentation
+- Better context understanding for AI assistance
+- Improved code suggestions based on documentation
+
+### **✅ Enhanced AI Features**
+- **Code Generation**: AI can reference documentation for better code suggestions
+- **Error Resolution**: AI understands project structure and can provide targeted help
+- **Feature Development**: AI can suggest improvements based on documented features
+- **Deployment Guidance**: AI can assist with deployment using documented procedures
+
+### **✅ Documentation Integration**
+- **Smart References**: AI can automatically reference relevant documentation
+- **Context Awareness**: AI understands project architecture and tech stack
+- **Best Practices**: AI can suggest improvements based on documented patterns
+
+## 📁 Documentation Structure
+
+```
+README/
+├── MAIN.mdc                    # Complete project documentation
+├── PRISMA-MIGRATION.mdc        # Database migration guide
+├── VERCEL-DEPLOYMENT.mdc       # Vercel deployment instructions
+├── SUPABASE-DEPLOYMENT.mdc     # Supabase setup guide
+├── DEPLOYMENT-CHECKLIST.mdc    # Deployment checklist
+├── API-KEYS-SETUP.mdc         # API keys configuration
+├── CURSOR-INTEGRATION.mdc     # This file - Cursor AI guide
+└── Documentation/             # Additional documentation files
+    └── documentation.html     # HTML documentation
+```
+
+## 🚀 How to Use with Cursor AI
+
+### **1. Automatic Context**
+When working in Cursor, the AI will automatically:
+- Reference relevant documentation files
+- Understand project structure
+- Provide context-aware suggestions
+- Follow documented patterns and best practices
+
+### **2. Documentation Queries**
+You can ask Cursor AI questions like:
+- "How do I deploy this to Vercel?" → References `VERCEL-DEPLOYMENT.mdc`
+- "What's the database setup?" → References `PRISMA-MIGRATION.mdc`
+- "How do I configure API keys?" → References `API-KEYS-SETUP.mdc`
+
+### **3. Code Generation**
+Cursor AI will generate code that:
+- Follows documented patterns
+- Uses correct tech stack
+- Implements best practices
+- References appropriate documentation
+
+## 🔧 Cursor AI Features
+
+### **✅ Available with .mdc Documentation**
+- **Smart Code Completion**: Based on documented patterns
+- **Error Resolution**: Using documented troubleshooting guides
+- **Feature Development**: Following documented architecture
+- **Deployment Assistance**: Using documented procedures
+- **Best Practices**: Following documented guidelines
+
+### **✅ Enhanced Development Experience**
+- **Context-Aware Suggestions**: AI understands your project structure
+- **Documentation Integration**: Automatic reference to relevant docs
+- **Pattern Recognition**: AI follows documented patterns
+- **Architecture Guidance**: AI understands your tech stack
+
+## 📋 Best Practices
+
+### **1. Keep Documentation Updated**
+- Update `.mdc` files when making changes
+- Include code examples in documentation
+- Document new features and patterns
+
+### **2. Use Clear Structure**
+- Consistent formatting across all `.mdc` files
+- Clear headings and sections
+- Include code examples and commands
+
+### **3. Reference Other Docs**
+- Link between related documentation files
+- Cross-reference relevant sections
+- Maintain consistency across all docs
+
+## 🎯 AI-Powered Development Workflow
+
+### **1. Project Setup**
+```bash
+# AI can reference MAIN.mdc for setup instructions
+# AI understands the tech stack from documentation
+# AI can suggest optimizations based on documented patterns
+```
+
+### **2. Feature Development**
+```bash
+# AI references PRISMA-MIGRATION.mdc for database patterns
+# AI follows documented API patterns
+# AI suggests improvements based on documented best practices
+```
+
+### **3. Deployment**
+```bash
+# AI references VERCEL-DEPLOYMENT.mdc for deployment steps
+# AI understands environment variable requirements
+# AI can troubleshoot using documented procedures
+```
+
+## 🔍 Documentation Queries
+
+### **Common AI Queries and Responses**
+
+**Q: "How do I add a new API endpoint?"**
+- AI references `MAIN.mdc` for API patterns
+- AI suggests following documented structure
+- AI provides code examples from documentation
+
+**Q: "How do I deploy to production?"**
+- AI references `VERCEL-DEPLOYMENT.mdc`
+- AI provides step-by-step deployment guide
+- AI suggests environment variable configuration
+
+**Q: "How do I set up the database?"**
+- AI references `PRISMA-MIGRATION.mdc`
+- AI provides database setup instructions
+- AI suggests connection string configuration
+
+## 🎉 Benefits Summary
+
+### **✅ For Developers**
+- Faster development with AI assistance
+- Better code quality through documented patterns
+- Reduced errors with documented procedures
+- Improved productivity with context-aware AI
+
+### **✅ For AI Assistants**
+- Better understanding of project structure
+- Context-aware suggestions and code generation
+- Improved error resolution capabilities
+- Enhanced feature development guidance
+
+### **✅ For Project Maintenance**
+- Consistent documentation format
+- Easy AI integration and updates
+- Better knowledge transfer
+- Improved project onboarding
+
+---
+
+**🚀 Your AiCourse project is now optimized for Cursor AI integration with comprehensive .mdc documentation!**

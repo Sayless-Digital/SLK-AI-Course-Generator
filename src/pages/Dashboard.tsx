@@ -15,7 +15,6 @@ import { useToast } from '@/hooks/use-toast';
 import ShareOnSocial from 'react-share-on-social';
 
 const Dashboard = () => {
-
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [page, setPage] = useState(1);
@@ -24,56 +23,81 @@ const Dashboard = () => {
   const userId = sessionStorage.getItem('uid');
   const [courseProgress, setCourseProgress] = useState({});
   const [modules, setTotalModules] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+
 
   function redirectCreate() {
     navigate("/dashboard/generate-course");
   }
 
-  async function redirectCourse(content: string, mainTopic: string, type: string, courseId: string, completed: string, end: string) {
-    const postURL = serverURL + '/api/getmyresult';
-    const response = await axios.post(postURL, { courseId });
-    if (response.data.success) {
+  async function redirectCourse(content, mainTopic, type, courseId, completed, end) {
+    try {
+      console.log('Redirecting to course:', { courseId, mainTopic, type });
+      
+      const postURL = serverURL + '/api/getmyresult';
+      const response = await axios.post(postURL, { courseId });
+      
       const jsonData = JSON.parse(content);
       sessionStorage.setItem('courseId', courseId);
       sessionStorage.setItem('first', completed);
       sessionStorage.setItem('jsonData', JSON.stringify(jsonData));
+      
       let ending = '';
       if (completed) ending = end;
-      navigate('/course/' + courseId, {
-        state: {
-          jsonData,
-          mainTopic: mainTopic.toUpperCase(),
-          type: type.toLowerCase(),
-          courseId,
-          end: ending,
-          pass: response.data.message,
-          lang: response.data.lang
-        }
-      });
-    } else {
-      const jsonData = JSON.parse(content);
-      sessionStorage.setItem('courseId', courseId);
-      sessionStorage.setItem('first', completed);
-      sessionStorage.setItem('jsonData', JSON.stringify(jsonData));
-      let ending = '';
-      if (completed) ending = end;
-      navigate('/course/' + courseId, {
-        state: {
+      
+      const navigationState = {
+        jsonData,
+        mainTopic: mainTopic.toUpperCase(),
+        type: type.toLowerCase(),
+        courseId,
+        end: ending,
+        pass: response.data.success ? response.data.message : false,
+        lang: response.data.lang || 'English'
+      };
+      
+      console.log('Navigation state:', navigationState);
+      console.log('Navigating to:', '/course/' + courseId);
+      navigate('/course/' + courseId, { state: navigationState });
+      
+    } catch (error) {
+      console.error('Error redirecting to course:', error);
+      
+      // Fallback navigation without API call
+      try {
+        const jsonData = JSON.parse(content);
+        sessionStorage.setItem('courseId', courseId);
+        sessionStorage.setItem('first', completed);
+        sessionStorage.setItem('jsonData', JSON.stringify(jsonData));
+        
+        let ending = '';
+        if (completed) ending = end;
+        
+        const fallbackState = {
           jsonData,
           mainTopic: mainTopic.toUpperCase(),
           type: type.toLowerCase(),
           courseId,
           end: ending,
           pass: false,
-          lang: response.data.lang
-        }
-      });
+          lang: 'English'
+        };
+        
+        console.log('Fallback navigation state:', fallbackState);
+        console.log('Fallback navigating to:', '/course/' + courseId);
+        navigate('/course/' + courseId, { state: fallbackState });
+      } catch (fallbackError) {
+        console.error('Fallback navigation failed:', fallbackError);
+        toast({
+          title: "Navigation Error",
+          description: "Failed to navigate to course. Please try again.",
+        });
+      }
     }
   }
 
-  const handleDeleteCourse = async (courseId: number) => {
+  const handleDeleteCourse = async (courseId) => {
     setIsLoading(true);
     const postURL = serverURL + '/api/deletecourse';
     const response = await axios.post(postURL, { courseId: courseId });
@@ -94,6 +118,8 @@ const Dashboard = () => {
   };
 
   const fetchUserCourses = useCallback(async () => {
+    if (!userId) return;
+    
     setIsLoading(page === 1);
     setLoadingMore(page > 1);
     const postURL = `${serverURL}/api/courses?userId=${userId}&page=${page}&limit=9`;
@@ -102,20 +128,37 @@ const Dashboard = () => {
       if (response.data.length === 0) {
         setHasMore(false);
       } else {
-        const progressMap = { ...courseProgress }; // Spread existing state
-        const modulesMap = { ...modules }; // Spread existing state
+        // Create new maps for this batch of courses
+        const newProgressMap = {};
+        const newModulesMap = {};
+        
         for (const course of response.data) {
-          const progress = await CountDoneTopics(course.content, course.mainTopic, course._id);
-          const totalModules = await CountTotalTopics(course.content, course.mainTopic, course._id);
-          progressMap[course._id] = progress;
-          modulesMap[course._id] = totalModules;
+          try {
+            const progress = await CountDoneTopics(course.content, course.mainTopic, course.id);
+            const totalModules = await CountTotalTopics(course.content, course.mainTopic, course.id);
+            newProgressMap[course.id] = progress;
+            newModulesMap[course.id] = totalModules;
+          } catch (error) {
+            console.error('Error processing course:', course.id, error);
+            newProgressMap[course.id] = 0;
+            newModulesMap[course.id] = 0;
+          }
         }
-        setCourseProgress(progressMap);
-        setTotalModules(modulesMap);
-        await setCourses((prevCourses) => [...prevCourses, ...response.data]);
+        
+        // Update state with new maps
+        setCourseProgress(prev => ({ ...prev, ...newProgressMap }));
+        setTotalModules(prev => ({ ...prev, ...newModulesMap }));
+        
+        // Replace courses on first page, append on subsequent pages
+        if (page === 1) {
+          setCourses(response.data);
+        } else {
+          setCourses((prevCourses) => [...prevCourses, ...response.data]);
+        }
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching courses:', error);
+      setHasMore(false);
     } finally {
       setIsLoading(false);
       setLoadingMore(false);
@@ -123,28 +166,42 @@ const Dashboard = () => {
   }, [userId, page]);
 
   useEffect(() => {
-    fetchUserCourses();
-  }, [fetchUserCourses]);
+    // Reset state when user changes
+    setCourses([]);
+    setPage(1);
+    setHasMore(true);
+    setCourseProgress({});
+    setTotalModules({});
+    
+    // Small delay to prevent rapid re-renders
+    const timer = setTimeout(() => {
+      if (userId) {
+        fetchUserCourses();
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [userId, fetchUserCourses]);
 
   const handleScroll = useCallback(() => {
-    if (!hasMore || loadingMore) return;
+    if (!hasMore || loadingMore || isLoading) return;
     const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
     if (scrollTop + clientHeight >= scrollHeight - 100) {
       setPage((prevPage) => prevPage + 1);
     }
-  }, [hasMore, loadingMore]);
+  }, [hasMore, loadingMore, isLoading]);
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 
-  const CountDoneTopics = async (json: string, mainTopic: string, courseId: string) => {
+  const CountDoneTopics = async (json, mainTopic, courseId) => {
     try {
       const jsonData = JSON.parse(json);
       let doneCount = 0;
       let totalTopics = 0;
-      jsonData[mainTopic.toLowerCase()].forEach((topic: { subtopics: string[]; }) => {
+      jsonData[mainTopic.toLowerCase()].forEach((topic) => {
         topic.subtopics.forEach((subtopic) => {
           if (subtopic.done) {
             doneCount++;
@@ -165,11 +222,11 @@ const Dashboard = () => {
     }
   }
 
-  const CountTotalTopics = async (json: string, mainTopic: string, courseId: string) => {
+  const CountTotalTopics = async (json, mainTopic, courseId) => {
     try {
       const jsonData = JSON.parse(json);
       let totalTopics = 0;
-      jsonData[mainTopic.toLowerCase()].forEach((topic: { subtopics: string[]; }) => {
+      jsonData[mainTopic.toLowerCase()].forEach((topic) => {
         topic.subtopics.forEach((subtopic) => {
           totalTopics++;
         });
@@ -181,7 +238,7 @@ const Dashboard = () => {
     }
   }
 
-  async function getQuiz(courseId: string) {
+  async function getQuiz(courseId) {
     const postURL = serverURL + '/api/getmyresult';
     const response = await axios.post(postURL, { courseId });
     if (response.data.success) {
@@ -191,8 +248,20 @@ const Dashboard = () => {
     }
   }
 
+  // Don't render if no user ID
+  if (!userId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">Please log in</h2>
+          <p className="text-muted-foreground">You need to be logged in to view your courses.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
+    <div>
       <SEO
         title="My Courses"
         description="View and manage your CourseGenie AI-generated courses"
@@ -209,7 +278,7 @@ const Dashboard = () => {
             Generate New Course
           </Button>
         </div>
-        {isLoading ? (
+        {isLoading && courses.length === 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="overflow-hidden border-border/50">
@@ -234,13 +303,12 @@ const Dashboard = () => {
               </Card>
             ))}
           </div>
-        )
-          :
-          <>
+        ) : (
+          <div>
             {courses.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map((course) => (
-                  <Card key={course._id} className="overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20 group">
+                  <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20 group">
                     <div className="aspect-video relative overflow-hidden">
                       <img
                         src={course.photo}
@@ -248,8 +316,8 @@ const Dashboard = () => {
                         className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute top-2 right-2">
-                        <Badge variant={course.status === 'Completed' ? 'destructive' : 'secondary'}>
-                          {course.completed === true ? 'Completed' : 'Pending'}
+                        <Badge variant={course.completed ? 'destructive' : 'secondary'}>
+                          {course.completed ? 'Completed' : 'Pending'}
                         </Badge>
                       </div>
                       <div className="absolute top-2 left-2">
@@ -262,7 +330,7 @@ const Dashboard = () => {
                           <DropdownMenuContent className="w-40">
                             <ShareOnSocial
                               textToShare={sessionStorage.getItem('mName') + " shared you course on " + course.mainTopic}
-                              link={websiteURL + '/shareable?id=' + course._id}
+                              link={websiteURL + '/shareable?id=' + course.id}
                               linkTitle={sessionStorage.getItem('mName') + " shared you course on " + course.mainTopic}
                               linkMetaDesc={sessionStorage.getItem('mName') + " shared you course on " + course.mainTopic}
                               linkFavicon={appLogo}
@@ -273,7 +341,7 @@ const Dashboard = () => {
                                 Share
                               </DropdownMenuItem>
                             </ShareOnSocial>
-                            <DropdownMenuItem onClick={() => handleDeleteCourse(course._id)}>
+                            <DropdownMenuItem onClick={() => handleDeleteCourse(course.id)}>
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
                             </DropdownMenuItem>
@@ -290,29 +358,26 @@ const Dashboard = () => {
                         <div className="h-2 bg-secondary rounded-full">
                           <div
                             className="h-2 bg-gradient-to-r from-primary to-indigo-500 rounded-full"
-                            style={{ width: `${courseProgress[course._id] || 0}%` }}
+                            style={{ width: `${courseProgress[course.id] || 0}%` }}
                           ></div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">{courseProgress[course._id] || 0}% complete</p>
+                        <p className="text-xs text-muted-foreground mt-1">{courseProgress[course.id] || 0}% complete</p>
                       </div>
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <div className="flex items-center">
                           <BookOpen className="mr-1 h-4 w-4" />
-                          {modules[course._id] || 0} modules
+                          {modules[course.id] || 0} modules
                         </div>
                       </div>
                     </CardContent>
                     <CardFooter>
                       <Button
-                        onClick={() => redirectCourse(course.content, course.mainTopic, course.type, course._id, course.completed, course.end)}
+                        onClick={() => redirectCourse(course.content, course.mainTopic, course.type, course.id, course.completed, '')}
                         variant="ghost"
                         className="w-full group-hover:bg-primary/10 transition-colors justify-between"
-                        asChild
                       >
-                        <div>
-                          Continue Learning
-                          <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </div>
+                        Continue Learning
+                        <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </CardFooter>
                   </Card>
@@ -361,11 +426,10 @@ const Dashboard = () => {
                 ))}
               </div>
             )}
-          </>
-        }
-
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 };
 

@@ -97,29 +97,258 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
 
-  /* Hide scrollbars globally */
-  * {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* Internet Explorer 10+ */
+@layer components {
+  /* Premium Content Styling */
+  .premium-content {
+    @apply text-foreground;
   }
 
-  /* Webkit browsers (Chrome, Safari, Edge) */
-  *::-webkit-scrollbar {
-    display: none;
+  .premium-content h2 {
+    @apply text-2xl font-bold mb-6 mt-8 first:mt-0 bg-gradient-to-r from-primary to-indigo-500 bg-clip-text text-transparent;
   }
 
-  /* Ensure scrolling still works */
-  html, body {
-    overflow-x: hidden;
+  .premium-content h3 {
+    @apply text-xl font-semibold mb-4 mt-6 text-foreground;
   }
 
-  /* Allow vertical scrolling but hide scrollbar */
-  body {
-    overflow-y: auto;
+  .premium-content p {
+    @apply text-base leading-relaxed mb-4 text-muted-foreground;
   }
 
+  .premium-content ul {
+    @apply space-y-2 mb-6;
+  }
 
+  .premium-content li {
+    @apply text-base leading-relaxed text-muted-foreground;
+  }
+
+  .premium-content strong {
+    @apply font-semibold text-foreground;
+  }
+
+  .premium-content em {
+    @apply italic text-primary;
+  }
+  
+  .premium-content b {
+    @apply font-semibold text-foreground;
+  }
+  
+  .premium-content i {
+    @apply italic text-primary;
+  }
+
+  .premium-content blockquote {
+    @apply border-l-4 border-primary/30 pl-4 py-2 my-6 bg-primary/5 rounded-r-lg italic text-muted-foreground;
+  }
+
+  .premium-content .highlight-box {
+    @apply bg-gradient-to-r from-primary/10 to-indigo-500/10 border border-primary/20 rounded-lg p-4 my-6;
+  }
+
+  .premium-content .highlight-box::before {
+    content: "💡 Pro Tip";
+    @apply block font-semibold text-primary mb-2 text-sm uppercase tracking-wide;
+  }
+
+  /* Enhanced Typography */
+  .premium-content h2::before {
+    content: "";
+    @apply block w-12 h-1 bg-gradient-to-r from-primary to-indigo-500 rounded-full mb-3;
+  }
+
+  .premium-content h3::before {
+    content: "→";
+    @apply inline-block text-primary mr-2;
+  }
+
+  /* List Enhancements */
+  .premium-content ul {
+    @apply list-none space-y-2 mb-6;
+  }
+  
+  .premium-content ul li {
+    @apply flex items-start gap-3 text-base leading-relaxed text-muted-foreground;
+  }
+  
+  .premium-content ul li::before {
+    content: "";
+    @apply w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0;
+  }
+  
+  .premium-content ol {
+    @apply list-decimal list-inside space-y-2 mb-6;
+  }
+  
+  .premium-content ol li {
+    @apply text-base leading-relaxed text-muted-foreground;
+  }
+
+  /* Code Blocks */
+  .premium-content code {
+    @apply bg-muted px-2 py-1 rounded text-sm font-mono text-foreground;
+  }
+
+  .premium-content pre {
+    @apply bg-muted p-4 rounded-lg overflow-x-auto my-4;
+  }
+
+  /* Links */
+  .premium-content a {
+    @apply text-primary hover:text-primary/80 underline decoration-primary/30 hover:decoration-primary transition-colors;
+  }
+
+  /* Tables */
+  .premium-content table {
+    @apply w-full border-collapse my-6;
+  }
+
+  .premium-content th {
+    @apply bg-muted px-4 py-2 text-left font-semibold border border-border;
+  }
+
+  .premium-content td {
+    @apply px-4 py-2 border border-border text-muted-foreground;
+  }
+  
+  /* Override any inline styles that might be generated */
+  .premium-content * {
+    @apply text-foreground !important;
+  }
+  
+  .premium-content p {
+    @apply text-base leading-relaxed mb-4 text-muted-foreground !important;
+  }
+  
+  .premium-content h2 {
+    @apply text-2xl font-bold mb-6 mt-8 first:mt-0 bg-gradient-to-r from-primary to-indigo-500 bg-clip-text text-transparent !important;
+  }
+  
+  .premium-content h3 {
+    @apply text-xl font-semibold mb-4 mt-6 text-foreground !important;
+  }
+  
+  .premium-content ul li {
+    @apply flex items-start gap-3 text-base leading-relaxed text-muted-foreground !important;
+  }
+  
+  .premium-content ul li::before {
+    content: "" !important;
+    @apply w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0 !important;
+  }
+  
+  .premium-content strong, .premium-content b {
+    @apply font-semibold text-foreground !important;
+  }
+  
+  .premium-content em, .premium-content i {
+    @apply italic text-primary !important;
+  }
+  
+  /* Remove any purple or non-standard colors */
+  .premium-content *[style*="color: purple"],
+  .premium-content *[style*="color: #800080"],
+  .premium-content *[style*="color: rgb(128, 0, 128)"],
+  .premium-content *[style*="color: #8B5CF6"],
+  .premium-content *[style*="color: #A855F7"] {
+    @apply text-foreground !important;
+  }
+  
+  /* Ensure consistent bullet points */
+  .premium-content ul {
+    @apply list-none space-y-2 mb-6 !important;
+  }
+  
+  .premium-content ul li::marker {
+    @apply hidden !important;
+  }
+  
+  /* Additional overrides for perfect styling */
+  .premium-content * {
+    font-family: inherit !important;
+  }
+  
+  .premium-content ul {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+  }
+  
+  .premium-content ol {
+    padding-left: 1.5rem !important;
+  }
+  
+  /* Ensure no purple or non-standard colors anywhere */
+  .premium-content * {
+    color: inherit !important;
+  }
+  
+  .premium-content p {
+    color: hsl(var(--muted-foreground)) !important;
+  }
+  
+  .premium-content h2 {
+    color: transparent !important;
+    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--primary) / 0.8)) !important;
+    background-clip: text !important;
+    -webkit-background-clip: text !important;
+  }
+  
+  .premium-content h3 {
+    color: hsl(var(--foreground)) !important;
+  }
+  
+  .premium-content strong, .premium-content b {
+    color: hsl(var(--foreground)) !important;
+  }
+  
+  .premium-content em, .premium-content i {
+    color: hsl(var(--primary)) !important;
+  }
+  
+  /* Perfect bullet points */
+  .premium-content ul li {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+    list-style: none !important;
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+  }
+  
+  .premium-content ul li::before {
+    content: "" !important;
+    width: 0.5rem !important;
+    height: 0.5rem !important;
+    background-color: hsl(var(--primary)) !important;
+    border-radius: 50% !important;
+    margin-top: 0.5rem !important;
+    flex-shrink: 0 !important;
+    display: block !important;
+  }
+}
+
+/* Hide scrollbars globally */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ensure scrolling still works */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Allow vertical scrolling but hide scrollbar */
+body {
+  overflow-y: auto;
 }
 
 /* Custom Styles */

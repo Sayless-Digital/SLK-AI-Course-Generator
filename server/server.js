@@ -2117,7 +2117,7 @@ app.post('/api/chat', async (req, res) => {
         const converter = new showdown.Converter();
         const markdownText = txt;
         const text = converter.makeHtml(markdownText);
-        res.status(200).json({ text });
+        res.status(200).json({ success: true, text });
     }).catch(error => {
         console.log('Error', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
@@ -2447,6 +2447,124 @@ app.get('/api/getblogs', async (req, res) => {
     } catch (error) {
         console.log(error);
         return res.json({ success: false, message: 'Internal Server Error' });
+    }
+});
+
+//GET PROMPT SETTINGS
+app.get('/api/prompt-settings', async (req, res) => {
+    try {
+        // For now, return default settings
+        // In a real implementation, you'd store these in a database
+        const defaultPrompts = {
+            courseStructure: {
+                name: 'Course Structure Generation',
+                description: 'Generates the initial course structure with topics and subtopics',
+                template: `Strictly in {language}, Generate a list of Strict {topicCount} topics and any number sub topic for each topic for main title {mainTopic}, everything in single line. Those {topicCount} topics should Strictly include these topics :- {subtopics}. Strictly Keep theory, youtube, image field empty. Generate in the form of JSON in this format {
+  "{mainTopic}": [
+    {
+      "title": "Topic Title",
+      "subtopics": [
+        {
+          "title": "Sub Topic Title",
+          "theory": "",
+          "youtube": "",
+          "image": "",
+          "done": false
+        }
+      ]
+    }
+  ]
+}`,
+                variables: ['{language}', '{topicCount}', '{mainTopic}', '{subtopics}'],
+                enabled: true
+            },
+            theoryContent: {
+                name: 'Theory Content Generation',
+                description: 'Generates detailed explanations for subtopics with examples',
+                template: `Strictly in {language}, Explain me about this subtopic of {mainTopic} with examples :- {subtopic}. Please Strictly Don't Give Additional Resources And Images.`,
+                variables: ['{language}', '{mainTopic}', '{subtopic}'],
+                enabled: true
+            },
+            imageGeneration: {
+                name: 'Image Generation',
+                description: 'Generates relevant images for subtopics',
+                template: `Example of {subtopic} in {mainTopic}`,
+                variables: ['{subtopic}', '{mainTopic}'],
+                enabled: true
+            },
+            quizGeneration: {
+                name: 'Quiz/Exam Generation',
+                description: 'Generates MCQ quizzes based on course content',
+                template: `Strictly in {language},
+generate a strictly 10 question MCQ quiz on title {mainTopic} based on each topics :- {subtopicsString}, Atleast One question per topic. Add options A, B, C, D and only one correct answer. Give your response Strictly inJSON format like this :-
+{
+  "{mainTopic}": [
+    {
+      "topic": "topic title",
+      "question": "",
+      "options": [
+        "",
+        "",
+        "",
+        ""
+      ],
+      "answer": "correct option like A, B, C, D"
+    }
+  ]
+}`,
+                variables: ['{language}', '{mainTopic}', '{subtopicsString}'],
+                enabled: true
+            },
+            videoSearch: {
+                name: 'Video Search Query',
+                description: 'Generates search queries for finding relevant videos',
+                template: `{subtopic} {mainTopic} in {language}`,
+                variables: ['{subtopic}', '{mainTopic}', '{language}'],
+                enabled: true
+            }
+        };
+
+        const defaultAiModel = {
+            model: 'gemini-2.0-flash',
+            temperature: 0.7,
+            maxTokens: 4000,
+            safetySettings: {
+                harassment: 'BLOCK_MEDIUM_AND_ABOVE',
+                hateSpeech: 'BLOCK_MEDIUM_AND_ABOVE',
+                sexuallyExplicit: 'BLOCK_MEDIUM_AND_ABOVE',
+                dangerousContent: 'BLOCK_MEDIUM_AND_ABOVE'
+            }
+        };
+
+        res.json({ 
+            success: true, 
+            prompts: defaultPrompts,
+            aiModel: defaultAiModel
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
+
+//SAVE PROMPT SETTINGS
+app.post('/api/prompt-settings', async (req, res) => {
+    try {
+        const { prompts, aiModel } = req.body;
+        
+        // In a real implementation, you'd save these to a database
+        // For now, we'll just log them and return success
+        console.log('Saving prompt settings:', { prompts, aiModel });
+        
+        // You could save to a file or database here
+        // For example, using fs.writeFileSync for file storage:
+        // const fs = require('fs');
+        // fs.writeFileSync('./prompt-settings.json', JSON.stringify({ prompts, aiModel }));
+        
+        res.json({ success: true, message: 'Prompt settings saved successfully' });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });
 

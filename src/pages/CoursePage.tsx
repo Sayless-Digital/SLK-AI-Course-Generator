@@ -12,13 +12,14 @@ import { Content } from '@tiptap/react'
 import { MinimalTiptapEditor } from '../minimal-tiptap'
 import YouTube from 'react-youtube';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, Home, Share, Download, MessageCircle, ClipboardCheck, Menu, Award } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ChevronDown, Home, Share, Download, MessageCircle, ClipboardCheck, Menu, Award, User, LogOut, Settings, Moon, Sun, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
@@ -27,18 +28,35 @@ import { useForm } from 'react-hook-form';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { appLogo, companyName, serverURL, websiteURL } from '@/constants';
+import { appLogo, companyName, serverURL, websiteURL, appName } from '@/constants';
 import axios from 'axios';
 import ShareOnSocial from 'react-share-on-social';
 import StyledText from '@/components/styledText';
 import html2pdf from 'html2pdf.js';
+import { useTheme } from '@/contexts/ThemeContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import Logo from '../res/logo.svg';
 
 const CoursePage = () => {
+  const { theme, toggleTheme } = useTheme();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState('');
 
   //ADDED FROM v4.0
   const { state } = useLocation();
   const { mainTopic, type, courseId, end, pass, lang } = state || {};
+  
+  console.log('CoursePage state:', state);
+  console.log('CoursePage extracted data:', { mainTopic, type, courseId, end, pass, lang });
+  
   const jsonData = JSON.parse(sessionStorage.getItem('jsonData'));
+  console.log('CoursePage jsonData from sessionStorage:', jsonData);
   const [selected, setSelected] = useState('');
   const [theory, setTheory] = useState('');
   const [media, setMedia] = useState('');
@@ -49,6 +67,8 @@ const CoursePage = () => {
   const [newMessage, setNewMessage] = useState('');
   const [exporting, setExporting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [keyTakeaways, setKeyTakeaways] = useState([]);
+  const [isGeneratingTakeaways, setIsGeneratingTakeaways] = useState(false);
   const defaultMessage = `<p>Hey there! I'm your AI teacher. If you have any questions about your ${mainTopic} course, whether it's about videos, images, or theory, just ask me. I'm here to clear your doubts.</p>`;
   const defaultPrompt = `I have a doubt about this topic :- ${mainTopic}. Please clarify my doubt in very short :- `;
 
@@ -91,29 +111,74 @@ const CoursePage = () => {
 
   // Loading skeleton for course content
   const CourseContentSkeleton = () => (
-    <div className="space-y-6 animate-pulse">
-      <Skeleton className="h-8 w-3/4 mb-8" />
-
-      <div className="space-y-6">
-        <div>
-          <Skeleton className="h-7 w-1/2 mb-4" />
-          <Skeleton className="h-5 w-full mb-2" />
-          <Skeleton className="h-5 w-full mb-2" />
-          <Skeleton className="h-5 w-3/4" />
+    <div className="space-y-8 animate-pulse">
+      {/* Header Section Skeleton */}
+      <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-4 text-center md:text-left">
+        <div className="flex flex-col items-center md:items-start">
+          <Skeleton className="h-10 w-80 mb-2" />
+          <Skeleton className="h-5 w-60" />
         </div>
-
-        <div>
-          <Skeleton className="h-7 w-1/3 mb-4" />
-          <Skeleton className="h-5 w-full mb-2" />
-          <Skeleton className="h-5 w-full mb-2" />
-          <Skeleton className="h-5 w-5/6" />
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-6 w-6" />
+          <Skeleton className="h-4 w-24" />
         </div>
+      </div>
 
-        <div>
-          <Skeleton className="h-7 w-2/5 mb-4" />
-          <Skeleton className="h-5 w-full mb-2" />
-          <Skeleton className="h-5 w-full mb-2" />
-          <Skeleton className="h-36 w-full rounded-md bg-muted/30" />
+      {/* Quick Actions Card Skeleton */}
+      <div className="bg-card border border-border/50 rounded-lg p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-24" />
+          <Skeleton className="h-10 w-28" />
+        </div>
+      </div>
+
+      {/* Media Section Skeleton */}
+      <div className="bg-card border border-border/50 rounded-lg overflow-hidden shadow-sm">
+        <div className="p-6">
+          <Skeleton className="h-7 w-40 mb-4" />
+          <div className="aspect-video w-full">
+            <Skeleton className="h-full w-full rounded-lg" />
+          </div>
+        </div>
+      </div>
+
+      {/* Content Section Skeleton */}
+      <div className="bg-card border border-border/50 rounded-lg overflow-hidden shadow-sm">
+        <div className="p-6">
+          <Skeleton className="h-7 w-40 mb-4" />
+          <div className="space-y-4">
+            <Skeleton className="h-5 w-full" />
+            <Skeleton className="h-5 w-full" />
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-5 w-full" />
+            <Skeleton className="h-5 w-5/6" />
+            <Skeleton className="h-5 w-full" />
+            <Skeleton className="h-5 w-4/5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Key Points Section Skeleton */}
+      <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-lg p-6">
+        <Skeleton className="h-7 w-40 mb-4" />
+        <div className="grid gap-3">
+          <div className="flex items-start gap-3">
+            <Skeleton className="w-2 h-2 rounded-full mt-2 flex-shrink-0" />
+            <Skeleton className="h-4 w-full" />
+          </div>
+          <div className="flex items-start gap-3">
+            <Skeleton className="w-2 h-2 rounded-full mt-2 flex-shrink-0" />
+            <Skeleton className="h-4 w-full" />
+          </div>
+          <div className="flex items-start gap-3">
+            <Skeleton className="w-2 h-2 rounded-full mt-2 flex-shrink-0" />
+            <Skeleton className="h-4 w-full" />
+          </div>
         </div>
       </div>
     </div>
@@ -129,6 +194,25 @@ const CoursePage = () => {
     height: '250px',
     width: '100%',
   };
+  // Check if user is logged in
+  useEffect(() => {
+    const auth = sessionStorage.getItem('auth');
+    const name = sessionStorage.getItem('mName');
+    if (auth === 'true' && name) {
+      setIsLoggedIn(true);
+      // Extract first name only
+      const firstName = name.split(' ')[0];
+      setUserName(firstName);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    sessionStorage.clear();
+    setIsLoggedIn(false);
+    setUserName('');
+    window.location.href = '/';
+  };
+
   useEffect(() => {
     loadMessages()
     getNotes()
@@ -197,7 +281,11 @@ const CoursePage = () => {
       if (jsonValue !== null) {
         setMessages(JSON.parse(jsonValue));
       } else {
-        const newMessages = [...messages, { text: defaultMessage, sender: 'bot' }];
+        const newMessages = [...messages, { 
+          id: Date.now() + Math.random(), 
+          text: defaultMessage, 
+          sender: 'bot' 
+        }];
         setMessages(newMessages);
         await storeLocal(newMessages);
       }
@@ -217,7 +305,11 @@ const CoursePage = () => {
   const sendMessage = async () => {
     if (newMessage.trim() === '') return;
 
-    const userMessage = { text: newMessage, sender: 'user' };
+    const userMessage = { 
+      id: Date.now() + Math.random(), 
+      text: newMessage, 
+      sender: 'user' 
+    };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     await storeLocal(updatedMessages);
@@ -235,7 +327,11 @@ const CoursePage = () => {
           description: "Internal Server Error",
         });
       } else {
-        const botMessage = { text: response.data.text, sender: 'bot' };
+        const botMessage = { 
+          id: Date.now() + Math.random() + 1, 
+          text: response.data.text, 
+          sender: 'bot' 
+        };
         const updatedMessagesWithBot = [...updatedMessages, botMessage];
         setMessages(updatedMessagesWithBot);
         await storeLocal(updatedMessagesWithBot);
@@ -243,7 +339,7 @@ const CoursePage = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Internal Server Error",
+        description: "Failed to send message. Please try again.",
       });
       console.error(error);
     }
@@ -282,14 +378,41 @@ const CoursePage = () => {
       if (mSubTopic.theory === '' || mSubTopic.theory === undefined || mSubTopic.theory === null) {
         if (type === 'video & text course') {
 
-          const query = `${mSubTopic.title} ${mainTopic} in english`;
+          const query = `educational tutorial ${mSubTopic.title} ${mainTopic} explained step by step`;
           setIsLoading(true);
           sendVideo(query, topics, sub, mSubTopic.title);
 
         } else {
 
-          const prompt = `Strictly in ${lang}, Explain me about this subtopic of ${mainTopic} with examples :- ${mSubTopic.title}. Please Strictly Don't Give Additional Resources And Images.`;
-          const promptImage = `Example of ${mSubTopic.title} in ${mainTopic}`;
+          const prompt = `Create a premium, engaging, and comprehensive lesson about "${mSubTopic.title}" in ${mainTopic}. 
+
+IMPORTANT: Generate ONLY the content body - NO HTML document structure, NO <html>, <head>, <body>, or <style> tags. Just the content that goes inside the lesson.
+
+Structure the content as a modern, professional e-learning module with the following sections:
+
+1. **Introduction** (use <h2> tag): A compelling hook and overview of what students will learn
+2. **Core Concepts** (use <h3> tags): Break down the main ideas with clear explanations
+3. **Real-World Examples** (use <h3> tag): Provide 2-3 practical, relatable examples
+4. **Step-by-Step Process** (use <h3> tag): If applicable, provide actionable steps
+5. **Pro Tips & Best Practices** (use <h3> tag): Share insider knowledge and expert advice
+6. **Common Mistakes to Avoid** (use <h3> tag): Help students learn from others' errors
+7. **Summary & Key Takeaways** (use <h2> tag): Reinforce the most important points
+
+Use rich HTML formatting:
+- Use <h2> for main sections and <h3> for subsections
+- Use <p> for paragraphs with engaging, conversational tone
+- Use <ul> and <li> for lists and bullet points
+- Use <strong> for important terms and concepts
+- Use <em> for emphasis and key insights
+- Use <blockquote> for expert quotes or important callouts
+- Use <div class="highlight-box"> for key insights or tips
+
+IMPORTANT: Do NOT use any inline styles, colors, or custom formatting. The content will be styled automatically by the platform.
+
+Write in ${lang} with a professional yet conversational tone. Make it engaging, practical, and immediately applicable. Include specific examples, actionable advice, and insights that make students feel they're getting premium, insider knowledge.
+
+Start directly with the content - no document structure tags.`;
+          const promptImage = `A clear, professional visual example or diagram showing ${mSubTopic.title} in ${mainTopic}`;
           setIsLoading(true);
           sendPrompt(prompt, promptImage, topics, sub);
 
@@ -303,6 +426,148 @@ const CoursePage = () => {
           setMedia(mSubTopic.image)
         }
       }
+      
+      // Generate custom key takeaways for existing content
+      if (mSubTopic.theory) {
+        generateKeyTakeaways(mSubTopic.theory, mSubTopic.title);
+      }
+    }
+  };
+
+  const handleCompletionToggle = (topics, sub, checked) => {
+    const mTopic = jsonData[mainTopic.toLowerCase()].find(topic => topic.title === topics);
+    const mSubTopic = mTopic?.subtopics.find(subtopic => subtopic.title === sub);
+    
+    if (mSubTopic) {
+      mSubTopic.done = checked;
+      updateCourse();
+      
+      toast({
+        title: checked ? "Marked as Complete" : "Marked as Incomplete",
+        description: `${sub} has been ${checked ? 'marked as complete' : 'marked as incomplete'}.`,
+      });
+    }
+  };
+
+  // Function to find current topic and subtopic information
+  const getCurrentTopicInfo = () => {
+    if (!selected || !jsonData) return null;
+    
+    for (const topic of jsonData[mainTopic.toLowerCase()]) {
+      const subtopic = topic.subtopics.find(sub => sub.title === selected);
+      if (subtopic) {
+        return { topic: topic.title, subtopic: subtopic.title, done: subtopic.done };
+      }
+    }
+    return null;
+  };
+
+  // Function to clean HTML content and remove document structure
+  const cleanHtmlContent = (htmlContent) => {
+    // Remove HTML document structure tags
+    let cleaned = htmlContent
+      .replace(/<!DOCTYPE[^>]*>/gi, '')
+      .replace(/<html[^>]*>/gi, '')
+      .replace(/<\/html>/gi, '')
+      .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')
+      .replace(/<body[^>]*>/gi, '')
+      .replace(/<\/body>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<title[^>]*>[\s\S]*?<\/title>/gi, '');
+    
+    // Remove inline styles and colors
+    cleaned = cleaned
+      .replace(/style="[^"]*"/gi, '')
+      .replace(/style='[^']*'/gi, '')
+      .replace(/color="[^"]*"/gi, '')
+      .replace(/color='[^']*'/gi, '')
+      .replace(/background-color="[^"]*"/gi, '')
+      .replace(/background-color='[^']*'/gi, '')
+      .replace(/font-size="[^"]*"/gi, '')
+      .replace(/font-size='[^']*'/gi, '')
+      .replace(/font-weight="[^"]*"/gi, '')
+      .replace(/font-weight='[^']*'/gi, '')
+      .replace(/text-align="[^"]*"/gi, '')
+      .replace(/text-align='[^']*'/gi, '');
+    
+    // Remove any remaining style attributes
+    cleaned = cleaned.replace(/\s+style="[^"]*"/gi, '');
+    
+    // Trim whitespace
+    cleaned = cleaned.trim();
+    
+    return cleaned;
+  };
+
+  // Function to generate custom key takeaways
+  const generateKeyTakeaways = async (content, topic) => {
+    setIsGeneratingTakeaways(true);
+    try {
+      const takeawayPrompt = `Based on this lesson content about "${topic}", generate 3-4 specific, actionable key takeaways that students should remember and apply.
+
+Content: ${content.substring(0, 2000)} // Limit content length for API
+
+Generate takeaways in this exact JSON format:
+[
+  {
+    "title": "Short, actionable title",
+    "description": "Brief explanation of why this is important and how to apply it"
+  }
+]
+
+Make the takeaways:
+- Specific to the lesson content
+- Actionable and practical
+- Easy to remember and apply
+- Relevant to the topic being taught
+- Professional and educational in tone
+
+Return only the JSON array, no other text.`;
+
+      const dataToSend = { prompt: takeawayPrompt };
+      const postURL = serverURL + '/api/generate';
+      const response = await axios.post(postURL, dataToSend);
+      
+      try {
+        const takeaways = JSON.parse(response.data.text);
+        setKeyTakeaways(takeaways);
+      } catch (parseError) {
+        console.error('Error parsing takeaways:', parseError);
+        // Fallback to default takeaways
+        setKeyTakeaways([
+          {
+            title: "Review Core Concepts",
+            description: "Take time to review the main concepts covered in this lesson"
+          },
+          {
+            title: "Practice Application",
+            description: "Practice applying these concepts to reinforce your understanding"
+          },
+          {
+            title: "Mark as Complete",
+            description: "Mark this lesson as complete when you feel confident with the material"
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error generating takeaways:', error);
+      // Fallback to default takeaways
+      setKeyTakeaways([
+        {
+          title: "Review Core Concepts",
+          description: "Take time to review the main concepts covered in this lesson"
+        },
+        {
+          title: "Practice Application",
+          description: "Practice applying these concepts to reinforce your understanding"
+        },
+        {
+          title: "Mark as Complete",
+          description: "Mark this lesson as complete when you feel confident with the material"
+        }
+      ]);
+    } finally {
+      setIsGeneratingTakeaways(false);
     }
   };
 
@@ -314,9 +579,9 @@ const CoursePage = () => {
       const postURL = serverURL + '/api/generate';
       const res = await axios.post(postURL, dataToSend);
       const generatedText = res.data.text;
-      const htmlContent = generatedText;
+      const cleanedContent = cleanHtmlContent(generatedText);
       try {
-        const parsedJson = htmlContent;
+        const parsedJson = cleanedContent;
         sendImage(parsedJson, promptImage, topics, sub);
       } catch (error) {
         console.error(error);
@@ -379,10 +644,14 @@ const CoursePage = () => {
     if (type === 'video & text course') {
       setMedia(mSubTopic.youtube);
     } else {
-      setMedia(image)
-    }
-    mSubTopic.done = true;
-    updateCourse();
+          setMedia(image)
+  }
+  
+  // Generate custom key takeaways
+  generateKeyTakeaways(theory, sub);
+  
+  // Removed automatic completion - user will manually toggle
+  updateCourse();
   }
 
   async function sendDataVideo(image, theory, topics, sub) {
@@ -398,10 +667,14 @@ const CoursePage = () => {
     if (type === 'video & text course') {
       setMedia(image);
     } else {
-      setMedia(mSubTopic.image)
-    }
-    mSubTopic.done = true;
-    updateCourse();
+          setMedia(mSubTopic.image)
+  }
+  
+  // Generate custom key takeaways
+  generateKeyTakeaways(theory, sub);
+  
+  // Removed automatic completion - user will manually toggle
+  updateCourse();
 
   }
 
@@ -467,17 +740,91 @@ const CoursePage = () => {
         const generatedText = res.data.url;
         const allText = generatedText.map(item => item.text);
         const concatenatedText = allText.join(' ');
-        const prompt = `Strictly in ${lang}, Summarize this theory in a teaching way :- ${concatenatedText}.`;
+        const prompt = `Create a premium, engaging lesson summary from this video content about "${subtop}" in ${mainTopic}. 
+
+IMPORTANT: Generate ONLY the content body - NO HTML document structure, NO <html>, <head>, <body>, or <style> tags. Just the content that goes inside the lesson.
+
+Structure the content as a modern, professional e-learning module with the following sections:
+
+1. **Introduction** (use <h2> tag): A compelling overview of what the video covers
+2. **Key Concepts** (use <h3> tags): Break down the main ideas from the video
+3. **Real-World Applications** (use <h3> tag): How to apply these concepts practically
+4. **Pro Insights** (use <h3> tag): Advanced tips and expert-level insights
+5. **Action Items** (use <h3> tag): Specific steps students can take immediately
+6. **Summary & Key Takeaways** (use <h2> tag): Reinforce the most important points
+
+Use rich HTML formatting:
+- Use <h2> for main sections and <h3> for subsections
+- Use <p> for paragraphs with engaging, conversational tone
+- Use <ul> and <li> for lists and bullet points
+- Use <strong> for important terms and concepts
+- Use <em> for emphasis and key insights
+- Use <blockquote> for expert quotes or important callouts
+- Use <div class="highlight-box"> for key insights or tips
+
+Write in ${lang} with a professional yet conversational tone. Make it engaging, practical, and immediately applicable. Include specific examples, actionable advice, and insights that make students feel they're getting premium, insider knowledge.
+
+Start directly with the content - no document structure tags.`;
         sendSummery(prompt, url, mTopic, mSubTopic);
       } catch (error) {
         console.error(error)
-        const prompt = `Strictly in ${lang}, Explain me about this subtopic of ${mainTopic} with examples :- ${subtop}. Please Strictly Don't Give Additional Resources And Images.`;
+        const prompt = `Create a premium, engaging, and comprehensive lesson about "${subtop}" in ${mainTopic}. 
+
+IMPORTANT: Generate ONLY the content body - NO HTML document structure, NO <html>, <head>, <body>, or <style> tags. Just the content that goes inside the lesson.
+
+Structure the content as a modern, professional e-learning module with the following sections:
+
+1. **Introduction** (use <h2> tag): A compelling hook and overview of what students will learn
+2. **Core Concepts** (use <h3> tags): Break down the main ideas with clear explanations
+3. **Real-World Examples** (use <h3> tag): Provide 2-3 practical, relatable examples
+4. **Step-by-Step Process** (use <h3> tag): If applicable, provide actionable steps
+5. **Pro Tips & Best Practices** (use <h3> tag): Share insider knowledge and expert advice
+6. **Common Mistakes to Avoid** (use <h3> tag): Help students learn from others' errors
+7. **Summary & Key Takeaways** (use <h2> tag): Reinforce the most important points
+
+Use rich HTML formatting:
+- Use <h2> for main sections and <h3> for subsections
+- Use <p> for paragraphs with engaging, conversational tone
+- Use <ul> and <li> for lists and bullet points
+- Use <strong> for important terms and concepts
+- Use <em> for emphasis and key insights
+- Use <blockquote> for expert quotes or important callouts
+- Use <div class="highlight-box"> for key insights or tips
+
+Write in ${lang} with a professional yet conversational tone. Make it engaging, practical, and immediately applicable. Include specific examples, actionable advice, and insights that make students feel they're getting premium, insider knowledge.
+
+Start directly with the content - no document structure tags.`;
         sendSummery(prompt, url, mTopic, mSubTopic);
       }
 
     } catch (error) {
       console.error(error)
-      const prompt = `Strictly in ${lang}, Explain me about this subtopic of ${mainTopic} with examples :- ${subtop}.  Please Strictly Don't Give Additional Resources And Images.`;
+      const prompt = `Create a premium, engaging, and comprehensive lesson about "${subtop}" in ${mainTopic}. 
+
+IMPORTANT: Generate ONLY the content body - NO HTML document structure, NO <html>, <head>, <body>, or <style> tags. Just the content that goes inside the lesson.
+
+Structure the content as a modern, professional e-learning module with the following sections:
+
+1. **Introduction** (use <h2> tag): A compelling hook and overview of what students will learn
+2. **Core Concepts** (use <h3> tags): Break down the main ideas with clear explanations
+3. **Real-World Examples** (use <h3> tag): Provide 2-3 practical, relatable examples
+4. **Step-by-Step Process** (use <h3> tag): If applicable, provide actionable steps
+5. **Pro Tips & Best Practices** (use <h3> tag): Share insider knowledge and expert advice
+6. **Common Mistakes to Avoid** (use <h3> tag): Help students learn from others' errors
+7. **Summary & Key Takeaways** (use <h2> tag): Reinforce the most important points
+
+Use rich HTML formatting:
+- Use <h2> for main sections and <h3> for subsections
+- Use <p> for paragraphs with engaging, conversational tone
+- Use <ul> and <li> for lists and bullet points
+- Use <strong> for important terms and concepts
+- Use <em> for emphasis and key insights
+- Use <blockquote> for expert quotes or important callouts
+- Use <div class="highlight-box"> for key insights or tips
+
+Write in ${lang} with a professional yet conversational tone. Make it engaging, practical, and immediately applicable. Include specific examples, actionable advice, and insights that make students feel they're getting premium, insider knowledge.
+
+Start directly with the content - no document structure tags.`;
       sendSummery(prompt, url, mTopic, mSubTopic);
     }
   }
@@ -490,9 +837,9 @@ const CoursePage = () => {
       const postURL = serverURL + '/api/generate';
       const res = await axios.post(postURL, dataToSend);
       const generatedText = res.data.text;
-      const htmlContent = generatedText;
+      const cleanedContent = cleanHtmlContent(generatedText);
       try {
-        const parsedJson = htmlContent;
+        const parsedJson = cleanedContent;
         sendDataVideo(url, parsedJson, mTopic, mSubTopic);
       } catch (error) {
         console.error(error);
@@ -669,27 +1016,47 @@ const CoursePage = () => {
     return (
       <>
         {topics.map((topic) => (
-          <Accordion key={topic.title} type="single" collapsible className="mb-2">
-            <AccordionItem value={topic.title} className="border-none">
-              <AccordionTrigger className="py-2 px-3 text-left hover:bg-accent/50 rounded-md">
-                {topic.title}
+          <Accordion key={topic.title} type="single" collapsible className="mb-3">
+            <AccordionItem value={topic.title} className="border border-border/50 rounded-lg overflow-hidden bg-card/50">
+              <AccordionTrigger className="py-4 px-4 text-left hover:bg-accent/50 transition-all duration-200 font-medium text-foreground">
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-sm font-semibold">{topic.title}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                      {topic.subtopics.filter(sub => sub.done).length}/{topic.subtopics.length}
+                    </span>
+                  </div>
+                </div>
               </AccordionTrigger>
-              <AccordionContent className="pl-2">
+              <AccordionContent className="px-0 pb-2">
+                <div className="space-y-1">
                 {topic.subtopics.map((subtopic) => (
                   <div
                     onClick={() => handleSelect(topic.title, subtopic.title)}
                     key={subtopic.title}
                     className={cn(
-                      "flex items-center px-4 py-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer",
-                      subtopic.title === "class-objects" && "bg-accent/50 font-medium text-primary"
-                    )}
-                  >
-                    {subtopic.done && (
-                      <span className="mr-2 text-primary">✓</span>
-                    )}
-                    <span className="text-sm">{subtopic.title}</span>
+                        "flex items-center px-4 py-3 mx-2 rounded-md hover:bg-accent/50 transition-all duration-200 cursor-pointer group",
+                        subtopic.done && "bg-primary/10 border-l-2 border-primary"
+                      )}
+                    >
+                      <div className="flex items-center justify-center w-5 h-5 mr-3">
+                        {subtopic.done ? (
+                          <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                            <span className="text-primary-foreground text-xs font-bold">✓</span>
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 border-2 border-muted-foreground/30 rounded-full group-hover:border-primary/50 transition-colors"></div>
+                        )}
+                      </div>
+                      <span className={cn(
+                        "text-sm transition-colors",
+                        subtopic.done ? "text-primary font-medium" : "text-muted-foreground group-hover:text-foreground"
+                      )}>
+                        {subtopic.title}
+                      </span>
                   </div>
                 ))}
+                </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -746,7 +1113,7 @@ const CoursePage = () => {
                 <html lang="en">
                 
                   <head></head>
-                 <div id="__react-email-preview" style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0;">Certificate<div> ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿</div>
+                 <div id="__react-email-preview" style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0;">Certificate<div> ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿</div>
                  </div>
                 
                   <body style="padding:20px; margin-left:auto;margin-right:auto;margin-top:auto;margin-bottom:auto;background-color:#f6f9fc;font-family:ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Helvetica Neue&quot;, Arial, &quot;Noto Sans&quot;, sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI Symbol&quot;, &quot;Noto Color Emoji&quot;">
@@ -798,27 +1165,47 @@ const CoursePage = () => {
     return (
       <>
         {topics.map((topic) => (
-          <Accordion key={topic.title} type="single" collapsible className="mb-2">
-            <AccordionItem value={topic.title} className="border-none">
-              <AccordionTrigger className="py-2 text-left px-3 hover:bg-accent/50 rounded-md">
-                {topic.title}
+          <Accordion key={topic.title} type="single" collapsible className="mb-3">
+            <AccordionItem value={topic.title} className="border border-border/50 rounded-lg overflow-hidden bg-card/50">
+              <AccordionTrigger className="py-4 px-4 text-left hover:bg-accent/50 transition-all duration-200 font-medium text-foreground">
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-sm font-semibold">{topic.title}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                      {topic.subtopics.filter(sub => sub.done).length}/{topic.subtopics.length}
+                    </span>
+                  </div>
+                </div>
               </AccordionTrigger>
-              <AccordionContent className="pl-2">
+              <AccordionContent className="px-0 pb-2">
+                <div className="space-y-1">
                 {topic.subtopics.map((subtopic) => (
                   <div
                     onClick={() => handleSelect(topic.title, subtopic.title)}
                     key={subtopic.title}
                     className={cn(
-                      "flex items-center px-4 py-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer",
-                      subtopic.title === "class-objects" && "bg-accent/50 font-medium text-primary"
-                    )}
-                  >
-                    {subtopic.done && (
-                      <span className="mr-2 text-primary">✓</span>
-                    )}
-                    <span className="text-sm">{subtopic.title}</span>
+                        "flex items-center px-4 py-3 mx-2 rounded-md hover:bg-accent/50 transition-all duration-200 cursor-pointer group",
+                        subtopic.done && "bg-primary/10 border-l-2 border-primary"
+                      )}
+                    >
+                      <div className="flex items-center justify-center w-5 h-5 mr-3">
+                        {subtopic.done ? (
+                          <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                            <span className="text-primary-foreground text-xs font-bold">✓</span>
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 border-2 border-muted-foreground/30 rounded-full group-hover:border-primary/50 transition-colors"></div>
+                        )}
+                      </div>
+                      <span className={cn(
+                        "text-sm transition-colors",
+                        subtopic.done ? "text-primary font-medium" : "text-muted-foreground group-hover:text-foreground"
+                      )}>
+                        {subtopic.title}
+                      </span>
                   </div>
                 ))}
+                </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -829,70 +1216,18 @@ const CoursePage = () => {
 
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden">
-      <header className="border-b border-border/40 py-2 px-4 flex justify-between items-center sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
+      <header className="border-b border-border/40 h-12 px-4 flex justify-between items-center sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
         <div className="flex items-center gap-4">
-          <Drawer>
-            <DrawerTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent className="max-h-[80vh]">
-              <div className="p-4">
-                <h2 className="text-xl font-bold mb-4">Course Content</h2>
-                <ScrollArea className="h-[60vh]">
-                  <div className="pr-4">
-                    {jsonData && renderTopicsAndSubtopics(jsonData[mainTopic.toLowerCase()])}
-                    <p onClick={redirectExam} className='py-2 text-left px-3 hover:bg-accent/50 rounded-md cursor-pointer'>{pass === true ? <span className="mr-2 text-primary">✓</span> : <></>}{mainTopic} Quiz</p>
-                  </div>
-                </ScrollArea>
-              </div>
-            </DrawerContent>
-          </Drawer>
-
-          <div className="flex items-center gap-2">
-            <div className="relative w-8 h-8">
-              <svg className="w-8 h-8" viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r="16" fill="none" className="stroke-muted-foreground/20" strokeWidth="2" />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="16"
-                  fill="none"
-                  className="stroke-primary"
-                  strokeWidth="2"
-                  strokeDasharray="100"
-                  strokeDashoffset={100 - percentage}
-                  transform="rotate(-90 18 18)"
-                />
-                <text
-                  x="18"
-                  y="18"
-                  dominantBaseline="middle"
-                  textAnchor="middle"
-                  className="fill-foreground text-[10px] font-medium"
-                >
-                  {percentage}%
-                </text>
-              </svg>
+          {/* Site Logo */}
+          <Link to="/" className="flex items-center space-x-2">
+            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+              <img src={Logo} alt="Logo" className='h-5 w-5' />
             </div>
-            <h1 className="text-xl font-bold">{mainTopic}</h1>
-          </div>
+            <span className="font-display font-medium text-base">{appName}</span>
+          </Link>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="hidden md:flex"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
           <ToggleGroup type="single" className="hidden sm:flex">
             <Button variant="ghost" size="sm" asChild>
               <Link to='/dashboard'>
@@ -918,63 +1253,457 @@ const CoursePage = () => {
               </Button>
             </ShareOnSocial>
           </ToggleGroup>
-          <ThemeToggle />
+          
+          {/* User Avatar Dropdown - Desktop */}
+          {isLoggedIn && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="hidden sm:flex items-center space-x-2 focus-visible:ring-0 focus-visible:ring-offset-0">
+                  <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-3 w-3" />
+                  </div>
+                  <span className="text-sm font-semibold">Hey {userName}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard" className="flex items-center space-x-2">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard/profile" className="flex items-center space-x-2">
+                    <User className="h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="flex items-center space-x-2 px-2 py-1.5"
+                  onClick={toggleTheme}
+                >
+                  {theme === 'light' ? (
+                    <Moon className="h-4 w-4" />
+                  ) : (
+                    <Sun className="h-4 w-4" />
+                  )}
+                  <span>Theme</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          
+          {/* Hamburger Menu - Desktop */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="hidden md:flex"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          
+          {/* Mobile Controls */}
+          <div className="flex items-center gap-2 sm:hidden">
+            {/* User Avatar Dropdown - Mobile */}
+            {isLoggedIn && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 p-0 focus-visible:ring-0 focus-visible:ring-offset-0">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-3 w-3" />
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="flex items-center space-x-2">
+                      <Sparkles className="h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard/profile" className="flex items-center space-x-2">
+                      <User className="h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="flex items-center space-x-2 px-2 py-1.5"
+                    onClick={toggleTheme}
+                  >
+                    {theme === 'light' ? (
+                      <Moon className="h-4 w-4" />
+                    ) : (
+                      <Sun className="h-4 w-4" />
+                    )}
+                    <span>Theme</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleLogout}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
+            {/* Hamburger Menu - Mobile */}
+            <Drawer>
+              <DrawerTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 p-0"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent className="max-h-[80vh]">
+                <div className="p-6">
+                  <div className="mb-6">
+                    <h2 className="text-xl font-bold mb-2">Course Content</h2>
+                    <p className="text-sm text-muted-foreground">Navigate through your course modules</p>
+                  </div>
+                  <ScrollArea className="h-[60vh]">
+                    <div className="pr-4">
+                      {jsonData && renderTopicsAndSubtopics(jsonData[mainTopic.toLowerCase()])}
+                      <div 
+                        onClick={redirectExam}
+                        className={cn(
+                          "flex items-center px-4 py-3 mx-2 rounded-md hover:bg-accent/50 transition-all duration-200 cursor-pointer group border border-border/50",
+                          pass === true && "bg-primary/10 border-l-2 border-primary"
+                        )}
+                      >
+                        <div className="flex items-center justify-center w-5 h-5 mr-3">
+                          {pass === true ? (
+                            <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                              <span className="text-primary-foreground text-xs font-bold">✓</span>
+                            </div>
+                          ) : (
+                            <div className="w-4 h-4 border-2 border-muted-foreground/30 rounded-full group-hover:border-primary/50 transition-colors"></div>
+                          )}
+                        </div>
+                        <span className={cn(
+                          "text-sm transition-colors",
+                          pass === true ? "text-primary font-medium" : "text-muted-foreground group-hover:text-foreground"
+                        )}>
+                          {mainTopic} Quiz
+                        </span>
+                      </div>
+                    </div>
+                  </ScrollArea>
+                </div>
+              </DrawerContent>
+            </Drawer>
+          </div>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
         <div className={cn(
-          "bg-sidebar border-r border-border/40 transition-all duration-300 overflow-hidden hidden md:block",
-          isMenuOpen ? "w-64" : "w-0"
+          "bg-card border-r border-border/40 transition-all duration-300 overflow-hidden hidden md:block shadow-sm",
+          isMenuOpen ? "w-80" : "w-0"
         )}>
           <ScrollArea className="h-full">
-            <div className="p-4">
+            <div className="p-6">
+              <div className="mb-6">
+                <h2 className="text-xl font-bold mb-2 bg-gradient-to-r from-primary to-indigo-500 bg-clip-text text-transparent leading-none">Course Content</h2>
+                <p className="text-sm text-muted-foreground">Navigate through your course modules</p>
+              </div>
               {jsonData && renderTopicsAndSubtopicsMobile(jsonData[mainTopic.toLowerCase()])}
-              <p onClick={redirectExam} className='py-2 text-left px-3 hover:bg-accent/50 rounded-md cursor-pointer'>{pass === true ? <span className="mr-2 text-primary">✓</span> : <></>}{mainTopic} Quiz</p>
+              <div 
+                onClick={redirectExam}
+                className={cn(
+                  "flex items-center px-4 py-3 mx-2 rounded-md hover:bg-accent/50 transition-all duration-200 cursor-pointer group border border-border/50",
+                  pass === true && "bg-primary/10 border-l-2 border-primary"
+                )}
+              >
+                <div className="flex items-center justify-center w-5 h-5 mr-3">
+                  {pass === true ? (
+                    <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                      <span className="text-primary-foreground text-xs font-bold">✓</span>
+                    </div>
+                  ) : (
+                    <div className="w-4 h-4 border-2 border-muted-foreground/30 rounded-full group-hover:border-primary/50 transition-colors"></div>
+                  )}
+                </div>
+                <span className={cn(
+                  "text-sm transition-colors",
+                  pass === true ? "text-primary font-medium" : "text-muted-foreground group-hover:text-foreground"
+                )}>
+                  {mainTopic} Quiz
+                </span>
+              </div>
             </div>
           </ScrollArea>
         </div>
 
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full" viewportref={mainContentRef}>
-            <main className="p-6 max-w-5xl mx-auto">
-              {isLoading ?
+            <main className="p-6 pb-20 md:pb-6">
+              {isLoading ? (
                 <CourseContentSkeleton />
-                :
-                <>
-                  <h1 className="text-3xl font-bold mb-6">{selected}</h1>
-                  <div className="space-y-4">
-                    {type === 'video & text course' ?
-                      <div>
-                        <YouTube key={media} className='mb-5' videoId={media} opts={opts} />
+              ) : (
+                <div className="space-y-8">
+                  {/* Header Section */}
+                  <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-4 text-center md:text-left">
+                    <div className="flex flex-col items-center md:items-start">
+                      <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-indigo-500 bg-clip-text text-transparent leading-none mb-2">{selected}</h1>
+                      <p className="text-muted-foreground">Learn about {selected.toLowerCase()} in {mainTopic}</p>
+                    </div>
+                    {getCurrentTopicInfo() && (
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={getCurrentTopicInfo().done}
+                            onCheckedChange={(checked) => handleCompletionToggle(
+                              getCurrentTopicInfo().topic, 
+                              getCurrentTopicInfo().subtopic, 
+                              checked
+                            )}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {getCurrentTopicInfo().done ? 'Completed' : 'Mark as Complete'}
+                          </span>
+                        </div>
                       </div>
-                      :
-                      <div>
-                        <img className='overflow-hidden h-96 max-md:h-64' src={media} alt="Media" />
-                      </div>
-                    }
-                    <StyledText text={theory} />
+                    )}
                   </div>
-                </>
-              }
+
+                  {/* Quick Actions Card */}
+                  <div className="bg-card border border-border/50 rounded-lg p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-semibold">Course Actions</h2>
+                      <div className="text-sm text-muted-foreground">
+                        {percentage}% complete
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => navigate('/dashboard')}
+                        className="flex items-center gap-2"
+                      >
+                        <Home className="h-4 w-4" />
+                        Back to Dashboard
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => redirectExam()}
+                        className="flex items-center gap-2"
+                      >
+                        <Award className="h-4 w-4" />
+                        Take Quiz
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => htmlDownload()}
+                        disabled={exporting}
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        {exporting ? 'Exporting...' : 'Export Course'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Media Section */}
+                  {media && (
+                    <div className="bg-card border border-border/50 rounded-lg overflow-hidden shadow-sm">
+                      <div className="p-6">
+                        {type === 'video & text course' && (
+                          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                            Video Lesson
+                          </h2>
+                        )}
+                        <div className="flex justify-center">
+                          {type === 'video & text course' ? (
+                            <div className="w-full">
+                              <YouTube key={media} videoId={media} opts={opts} />
+                            </div>
+                          ) : (
+                            <div className="w-full">
+                              <div className="aspect-video w-full">
+                                <img 
+                                  className="w-full h-full object-cover rounded-lg shadow-lg" 
+                                  src={media} 
+                                  alt={`Visual example for ${selected}`} 
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Content Section */}
+                  {theory && (
+                    <div className="bg-card border border-border/50 rounded-lg overflow-hidden shadow-sm">
+                      <div className="p-6">
+                        <div className="flex items-center justify-between mb-6">
+                          <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            Learning Content
+                          </h2>
+                          <div className="flex items-center gap-2">
+                            <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                              Premium Content
+                            </div>
+                          </div>
+                        </div>
+                        <div className="prose prose-gray dark:prose-invert max-w-none premium-content" style={{ fontFamily: 'inherit' }}>
+                          <StyledText text={theory} />
+                        </div>
+                        <div className="mt-8 pt-6 border-t border-border/50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span>Content loaded successfully</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                                <Download className="h-4 w-4 mr-1" />
+                                Print
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Key Points Section */}
+                  {theory && (
+                    <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-lg p-6">
+                      <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                          Key Takeaways
+                        </h2>
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs text-primary font-medium bg-primary/10 px-2 py-1 rounded-full">
+                            AI Generated
+                          </div>
+                          {isGeneratingTakeaways && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                              <span>Generating...</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {isGeneratingTakeaways ? (
+                        <div className="grid gap-4">
+                          {[1, 2, 3].map((i) => (
+                            <div key={i} className="flex items-start gap-3 p-3 bg-white/50 dark:bg-black/20 rounded-lg border border-primary/10 animate-pulse">
+                              <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                              <div className="flex-1">
+                                <div className="h-4 bg-muted rounded mb-2"></div>
+                                <div className="h-3 bg-muted rounded w-3/4"></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid gap-4">
+                          {keyTakeaways.length > 0 ? (
+                            keyTakeaways.map((takeaway, index) => (
+                              <div key={index} className="flex items-start gap-3 p-3 bg-white/50 dark:bg-black/20 rounded-lg border border-primary/10 hover:bg-white/70 dark:hover:bg-black/30 transition-colors">
+                                <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                                <div>
+                                  <p className="text-sm font-medium text-foreground mb-1">{takeaway.title}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {takeaway.description}
+                                  </p>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="flex items-start gap-3 p-3 bg-white/50 dark:bg-black/20 rounded-lg border border-primary/10">
+                              <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                              <div>
+                                <p className="text-sm font-medium text-foreground mb-1">Review Core Concepts</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Take time to review the main concepts covered in this lesson
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                                              <div className="mt-6 pt-4 border-t border-primary/20">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span>Ready to continue learning</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => generateKeyTakeaways(theory, selected)}
+                                disabled={isGeneratingTakeaways}
+                              >
+                                {isGeneratingTakeaways ? 'Generating...' : 'Regenerate'}
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  // Find next lesson logic here
+                                  toast({
+                                    title: "Great progress!",
+                                    description: "You're ready for the next lesson.",
+                                  });
+                                }}
+                              >
+                                Next Lesson
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </main>
           </ScrollArea>
         </div>
       </div>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border p-2 flex justify-around items-center">
-        <Button variant="ghost" size="sm">
-          <Link to='/dashboard'>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-2 flex justify-around items-center shadow-lg">
+        <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-2">
+          <Link to='/dashboard' className="flex flex-col items-center gap-1">
             <Home className="h-5 w-5" />
+            <span className="text-xs">Home</span>
           </Link>
         </Button>
-        <Button onClick={certificateCheck} variant="ghost" size="sm" asChild>
-          <span>
-            <Award className="h-5 w-5" />
-          </span>
+        <Button onClick={certificateCheck} variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-2">
+          <Award className="h-5 w-5" />
+          <span className="text-xs">Certificate</span>
         </Button>
-        <Button onClick={htmlDownload} disabled={exporting} variant="ghost" size="sm">
+        <Button onClick={htmlDownload} disabled={exporting} variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-2">
           <Download className="h-5 w-5" />
+          <span className="text-xs">{exporting ? 'Exporting' : 'Export'}</span>
         </Button>
         <ShareOnSocial
           textToShare={sessionStorage.getItem('mName') + " shared you course on " + mainTopic}
@@ -984,23 +1713,24 @@ const CoursePage = () => {
           linkFavicon={appLogo}
           noReferer
         >
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" className="flex flex-col items-center gap-1 h-auto py-2">
             <Share className="h-5 w-5" />
+            <span className="text-xs">Share</span>
           </Button>
         </ShareOnSocial>
       </div>
 
-      <div className="fixed bottom-16 right-6 flex flex-col gap-3 md:bottom-6">
+      <div className="fixed bottom-20 right-6 flex flex-col gap-3 md:bottom-6">
         <Button
           size="icon"
-          className="rounded-full bg-primary shadow-lg hover:shadow-xl"
+          className="rounded-full bg-gradient-to-r from-primary to-indigo-500 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
           onClick={() => setIsChatOpen(true)}
         >
           <MessageCircle className="h-5 w-5" />
         </Button>
         <Button
           size="icon"
-          className="rounded-full bg-primary shadow-lg hover:shadow-xl"
+          className="rounded-full bg-gradient-to-r from-primary to-indigo-500 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
           onClick={() => setIsNotesOpen(true)}
         >
           <ClipboardCheck className="h-5 w-5" />
@@ -1053,6 +1783,9 @@ const CoursePage = () => {
         <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogTitle>Course Assistant</DialogTitle>
+            <DialogDescription>
+              Ask questions about your course content and get AI-powered assistance.
+            </DialogDescription>
             <div className="flex flex-col h-[60vh]">
               <ScrollArea className="flex-1 pr-4 mb-4">
                 <div className="space-y-4 pt-2">

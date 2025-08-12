@@ -49,6 +49,7 @@ import AdminBlogs from "./pages/admin/AdminBlogs";
 import AdminBankTransfers from "./pages/admin/AdminBankTransfers";
 import AdminPlanSettings from "./pages/admin/AdminPlanSettings";
 import AdminGeneralSettings from "./pages/admin/AdminGeneralSettings";
+import AdminPromptSettings from "./pages/admin/AdminPromptSettings";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { googleClientId } from "./constants";
 
@@ -77,7 +78,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            <BrowserRouter future={{ v7_relativeSplatPath: true }}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -131,6 +132,7 @@ const App = () => (
                   <Route path="bank-transfers" element={<AdminBankTransfers />} />
                   <Route path="settings/plans" element={<AdminPlanSettings />} />
                   <Route path="settings/general" element={<AdminGeneralSettings />} />
+                  <Route path="settings/prompts" element={<AdminPromptSettings />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
