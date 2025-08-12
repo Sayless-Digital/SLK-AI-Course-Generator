@@ -1,0 +1,150 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String         @id @default(cuid())
+  email                String         @unique
+  mName                String?
+  password             String?
+  type                 String?
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  courses              Course[]
+  subscriptions        Subscription[]
+  notes                Notes[]
+  exams                Exam[]
+  contacts             Contact[]
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  @@map("users")
+}
+
+model Admin {
+  id       String @id @default(cuid())
+  email    String @unique
+  mName    String?
+  type     String
+  total    Int    @default(0)
+  terms    String @default("")
+  privacy  String @default("")
+  cancel   String @default("")
+  refund   String @default("")
+  billing  String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model Course {
+  id        String   @id @default(cuid())
+  content   String
+  type      String?
+  mainTopic String?
+  photo     String?
+  completed Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes     Notes[]
+  exams     Exam[]
+  languages Language[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("courses")
+}
+
+model Subscription {
+  id            String   @id @default(cuid())
+  subscription  String
+  subscriberId  String
+  plan          String
+  method        String
+  active        Boolean  @default(true)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  fname     String
+  lname     String
+  email     String
+  phone     Int?
+  msg       String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contacts")
+}
+
+model Notes {
+  id        String   @id @default(cuid())
+  notes     String
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notes")
+}
+
+model Exam {
+  id        String   @id @default(cuid())
+  exam      String
+  marks     String
+  passed    Boolean  @default(false)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("exams")
+}
+
+model Language {
+  id        String   @id @default(cuid())
+  lang      String
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("languages")
+}
+
+model Blog {
+  id        String   @id @default(cuid())
+  title     String   @unique
+  excerpt   String?
+  category  String?
+  tags      String?
+  content   String?
+  image     Bytes
+  popular   Boolean  @default(false)
+  featured  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("blogs")
+}
