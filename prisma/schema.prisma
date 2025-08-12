@@ -53,6 +53,18 @@ model PlanSettings {
   price     Float
   period    String   @default("forever") // forever, monthly, yearly, custom
   features  String[] // Array of features
+  
+  // Functional limits
+  maxSubtopics     Int     @default(5) // Maximum number of sub-topics user can generate
+  maxTopics        Int     @default(4) // Maximum number of main topics (4 or 8)
+  courseTypes      String[] @default(["Text & Image Course"]) // Available course types
+  languages        String[] @default(["English"]) // Available languages
+  unlimitedCourses Boolean @default(false) // Can create unlimited courses
+  aiTeacherChat    Boolean @default(true) // Has access to AI teacher chat
+  videoCourses     Boolean @default(false) // Can create video courses
+  theoryCourses    Boolean @default(true) // Can create theory courses
+  imageCourses     Boolean @default(true) // Can create image courses
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -936,7 +936,7 @@ const CoursePage = () => {
         </div>
 
         <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full" viewportRef={mainContentRef}>
+          <ScrollArea className="h-full" viewportref={mainContentRef}>
             <main className="p-6 max-w-5xl mx-auto">
               {isLoading ?
                 <CourseContentSkeleton />

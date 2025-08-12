@@ -19,6 +19,7 @@
     "db:switch-direct": "./scripts/switch-db.sh direct",
     "db:switch-pooler": "./scripts/switch-db.sh pooler",
     "add-admin": "node scripts/add-admin.js",
+    "clear-courses": "node scripts/clear-courses.js",
     "vercel-build": "prisma generate && vite build"
   },
   "dependencies": {

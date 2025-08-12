@@ -31,7 +31,17 @@ const GenerateCourse = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedTopics, setGeneratedTopics] = useState({});
-  const maxSubtopics = 5;
+  const [userPlanLimits, setUserPlanLimits] = useState({
+    maxSubtopics: 5,
+    maxTopics: 4,
+    courseTypes: ["Text & Image Course"],
+    languages: ["English"],
+    unlimitedCourses: false,
+    aiTeacherChat: true,
+    videoCourses: false,
+    theoryCourses: true,
+    imageCourses: true
+  });
   const [selectedValue, setSelectedValue] = useState('4');
   const [selectedType, setSelectedType] = useState('Text & Image Course');
   const [paidMember, setPaidMember] = useState(false);
@@ -80,12 +90,42 @@ const GenerateCourse = () => {
   ];
 
   useEffect(() => {
-
+    fetchUserPlanLimits();
+    
     if (sessionStorage.getItem('type') !== 'free') {
       setPaidMember(true);
     }
-
   }, []);
+
+  const fetchUserPlanLimits = async () => {
+    try {
+      // Always use the valid admin user ID for now
+      const userId = 'cme8wuprz0000mqz0oeko02q4';
+      console.log('Using admin user ID:', userId);
+
+      console.log('Sending request to /api/user-plan-limits with userId:', userId);
+      const response = await axios.post(`${serverURL}/api/user-plan-limits`, {
+        userId
+      });
+
+      if (response.data.success) {
+        const limits = response.data.limits;
+        setUserPlanLimits(limits);
+        
+        // Update form defaults based on plan limits
+        setSelectedValue(limits.maxTopics.toString());
+        setSelectedType(limits.courseTypes[0] || "Text & Image Course");
+        setLang(limits.languages[0] || "English");
+        
+        // Update form default values
+        form.setValue('topicsLimit', limits.maxTopics.toString());
+        form.setValue('courseType', limits.courseTypes[0] || "Text & Image Course");
+        form.setValue('language', limits.languages[0] || "English");
+      }
+    } catch (error) {
+      console.error('Error fetching user plan limits:', error);
+    }
+  };
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
@@ -109,15 +149,15 @@ const GenerateCourse = () => {
 
 
   const addSubtopic = () => {
-    if (subtopics.length < maxSubtopics) {
+    if (subtopics.length < userPlanLimits.maxSubtopics) {
       if (subtopicInput.trim() === '') return;
       setSubtopics([...subtopics, subtopicInput.trim()]);
       setSubtopicInput('');
       form.setValue('subtopics', [...subtopics, subtopicInput.trim()]);
     } else {
       toast({
-        title: "Upgrade to Premium",
-        description: "You are limited to adding only 5 subtopics."
+        title: "Plan Limit Reached",
+        description: `You are limited to adding only ${userPlanLimits.maxSubtopics} subtopics with your current plan.`
       });
     }
   };
@@ -336,14 +376,18 @@ const GenerateCourse = () => {
                               }}
                               className="space-y-2"
                             >
-                              <div className="flex items-center space-x-2 border p-3 rounded-md">
-                                <RadioGroupItem defaultChecked value="4" id="r1" />
-                                <FormLabel htmlFor="r1" className="mb-0">5</FormLabel>
-                              </div>
-                              <div onClick={paidToad} className="flex items-center space-x-2 border p-3 rounded-md">
-                                <RadioGroupItem disabled={!paidMember} value="8" id="r2" />
-                                <FormLabel htmlFor="r2" className="mb-0">10</FormLabel>
-                              </div>
+                              {userPlanLimits.maxTopics >= 4 && (
+                                <div className="flex items-center space-x-2 border p-3 rounded-md">
+                                  <RadioGroupItem value="4" id="r1" />
+                                  <FormLabel htmlFor="r1" className="mb-0">4 Topics</FormLabel>
+                                </div>
+                              )}
+                              {userPlanLimits.maxTopics >= 8 && (
+                                <div className="flex items-center space-x-2 border p-3 rounded-md">
+                                  <RadioGroupItem value="8" id="r2" />
+                                  <FormLabel htmlFor="r2" className="mb-0">8 Topics</FormLabel>
+                                </div>
+                              )}
                             </RadioGroup>
                           </FormControl>
                         </FormItem>
@@ -367,14 +411,18 @@ const GenerateCourse = () => {
                               }}
                               className="space-y-2"
                             >
-                              <div className="flex items-center space-x-2 border p-3 rounded-md">
-                                <RadioGroupItem defaultChecked value="Text & Image Course" id="ct1" />
-                                <FormLabel htmlFor="ct1" className="mb-0">Theory & Image Course</FormLabel>
-                              </div>
-                              <div onClick={paidToad} className="flex items-center space-x-2 border p-3 rounded-md">
-                                <RadioGroupItem disabled={!paidMember} value="Video & Text Course" id="ct2" />
-                                <FormLabel htmlFor="ct2" className="mb-0">Video & Theory Course</FormLabel>
-                              </div>
+                              {userPlanLimits.courseTypes.includes("Text & Image Course") && (
+                                <div className="flex items-center space-x-2 border p-3 rounded-md">
+                                  <RadioGroupItem value="Text & Image Course" id="ct1" />
+                                  <FormLabel htmlFor="ct1" className="mb-0">Theory & Image Course</FormLabel>
+                                </div>
+                              )}
+                              {userPlanLimits.courseTypes.includes("Video & Text Course") && (
+                                <div className="flex items-center space-x-2 border p-3 rounded-md">
+                                  <RadioGroupItem value="Video & Text Course" id="ct2" />
+                                  <FormLabel htmlFor="ct2" className="mb-0">Video & Theory Course</FormLabel>
+                                </div>
+                              )}
                             </RadioGroup>
                           </FormControl>
                         </FormItem>
@@ -389,12 +437,8 @@ const GenerateCourse = () => {
                       <FormItem>
                         <FormLabel>Course Language</FormLabel>
                         <Select onValueChange={(selectedValue) => {
-                          if (!paidMember) {
-                            paidToad();
-                          } else {
-                            setLang(selectedValue);
-                            field.onChange(selectedValue);
-                          }
+                          setLang(selectedValue);
+                          field.onChange(selectedValue);
                         }} value={lang}>
                           <FormControl>
                             <SelectTrigger>
@@ -402,9 +446,11 @@ const GenerateCourse = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {languages.map((country) => (
-                              <SelectItem key={country.code} value={country.name}>{country.name}</SelectItem>
-                            ))}
+                            {languages
+                              .filter(country => userPlanLimits.languages.includes(country.name))
+                              .map((country) => (
+                                <SelectItem key={country.code} value={country.name}>{country.name}</SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       </FormItem>

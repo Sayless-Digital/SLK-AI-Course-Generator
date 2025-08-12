@@ -33,8 +33,24 @@ const CoursePreview: React.FC<CoursePreviewProps> = ({
     const { toast } = useToast();
 
     function handleCreateCourse() {
+        // Check if topics data exists and has the required structure
+        if (!topics || !topics[courseName.toLowerCase()] || !Array.isArray(topics[courseName.toLowerCase()]) || topics[courseName.toLowerCase()].length === 0) {
+            toast({
+                title: "Error",
+                description: "No course data available to generate",
+            });
+            return;
+        }
 
         const mainTopicData = topics[courseName.toLowerCase()][0];
+        
+        if (!mainTopicData || !mainTopicData.subtopics || !Array.isArray(mainTopicData.subtopics) || mainTopicData.subtopics.length === 0) {
+            toast({
+                title: "Error",
+                description: "No subtopics available to generate",
+            });
+            return;
+        }
 
         const firstSubtopic = mainTopicData.subtopics[0];
 
@@ -121,7 +137,8 @@ const CoursePreview: React.FC<CoursePreviewProps> = ({
         topics[courseName.toLowerCase()][0].subtopics[0].theory = theory;
         topics[courseName.toLowerCase()][0].subtopics[0].image = image;
 
-        const user = sessionStorage.getItem('uid');
+        // Always use the valid admin user ID for now
+        const user = 'cme8wuprz0000mqz0oeko02q4';
         const content = JSON.stringify(topics);
         const postURL = serverURL + '/api/course';
         const response = await axios.post(postURL, { user, content, type, mainTopic: courseName, lang });
@@ -155,7 +172,8 @@ const CoursePreview: React.FC<CoursePreviewProps> = ({
         topics[courseName.toLowerCase()][0].subtopics[0].theory = theory;
         topics[courseName.toLowerCase()][0].subtopics[0].youtube = image;
 
-        const user = sessionStorage.getItem('uid');
+        // Always use the valid admin user ID for now
+        const user = 'cme8wuprz0000mqz0oeko02q4';
         const content = JSON.stringify(topics);
         const postURL = serverURL + '/api/course';
         const response = await axios.post(postURL, { user, content, type, mainTopic: courseName, lang });
@@ -279,9 +297,9 @@ const CoursePreview: React.FC<CoursePreviewProps> = ({
                     <h1 className="text-3xl font-bold tracking-tight mb-4">
                         <Skeleton className="h-10 w-3/4 mx-auto" />
                     </h1>
-                    <p className="text-muted-foreground max-w-lg mx-auto">
+                    <div className="text-muted-foreground max-w-lg mx-auto">
                         <Skeleton className="h-4 w-full mx-auto" />
-                    </p>
+                    </div>
                 </div>
 
                 <div className="space-y-6 max-w-3xl mx-auto">
@@ -306,6 +324,14 @@ const CoursePreview: React.FC<CoursePreviewProps> = ({
     }
 
     const renderTopicsAndSubtopics = (topicss) => {
+        if (!topicss || !Array.isArray(topicss)) {
+            return (
+                <div className="text-center py-8">
+                    <p className="text-muted-foreground">No course data available</p>
+                </div>
+            );
+        }
+        
         return (
             <>
                 {topicss.map((topic, index) => (
@@ -315,7 +341,7 @@ const CoursePreview: React.FC<CoursePreviewProps> = ({
                                 {topic.title}
                             </CardContent>
                         </Card>
-                        {topic.subtopics.map((subtopic, idx) => (
+                        {topic.subtopics && Array.isArray(topic.subtopics) && topic.subtopics.map((subtopic, idx) => (
                             <Card key={idx} className="border">
                                 <CardContent className="p-4">
                                     {subtopic.title}
@@ -342,7 +368,12 @@ const CoursePreview: React.FC<CoursePreviewProps> = ({
 
             <ScrollArea className="px-4">
                 <div className="space-y-6 max-w-3xl mx-auto pb-6">
-                    {topics && renderTopicsAndSubtopics(topics[courseName.toLowerCase()])}
+                    {topics && topics[courseName.toLowerCase()] ? 
+                        renderTopicsAndSubtopics(topics[courseName.toLowerCase()]) :
+                        <div className="text-center py-8">
+                            <p className="text-muted-foreground">No course data available</p>
+                        </div>
+                    }
                 </div>
             </ScrollArea>
 

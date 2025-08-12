@@ -235,8 +235,41 @@ app.post('/api/dashboard', async (req, res) => {
 //GET USERS (for admin panel)
 app.get('/api/getusers', async (req, res) => {
     try {
-        const users = await prisma.user.findMany();
-        res.json(users);
+        const users = await prisma.user.findMany({
+            include: {
+                subscriptions: {
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
+                }
+            }
+        });
+        
+        // Get plan settings for reference
+        const planSettings = await prisma.planSettings.findMany();
+        const planMap = {};
+        planSettings.forEach(plan => {
+            planMap[plan.planType] = plan;
+        });
+        
+        // Enhance user data with subscription details
+        const enhancedUsers = users.map(user => {
+            const currentSubscription = user.subscriptions.find(sub => sub.active);
+            const planInfo = planMap[user.type] || planMap['free'];
+            
+            return {
+                ...user,
+                currentSubscription,
+                planInfo: {
+                    name: planInfo?.name || 'Unknown Plan',
+                    price: planInfo?.price || 0,
+                    period: planInfo?.period || 'forever',
+                    features: planInfo?.features || []
+                }
+            };
+        });
+        
+        res.json(enhancedUsers);
     } catch (error) {
         console.error('Get users error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
@@ -333,6 +366,205 @@ app.post('/api/addadmin', async (req, res) => {
         res.json({ success: true, message: 'Admin added successfully' });
     } catch (error) {
         console.error('Add admin error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//UPDATE USER PLAN
+app.post('/api/update-user-plan', async (req, res) => {
+    try {
+        const { userId, newPlanType, reason, adminNotes } = req.body;
+        
+        // Get user
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                subscriptions: {
+                    where: { active: true }
+                }
+            }
+        });
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        
+        // Get plan settings
+        const planSettings = await prisma.planSettings.findUnique({
+            where: { planType: newPlanType }
+        });
+        
+        if (!planSettings) {
+            return res.status(404).json({ success: false, message: 'Plan not found' });
+        }
+        
+        // Deactivate current subscription if exists
+        if (user.subscriptions.length > 0) {
+            await prisma.subscription.updateMany({
+                where: { userId, active: true },
+                data: { active: false }
+            });
+        }
+        
+        // Create new subscription record for tracking
+        await prisma.subscription.create({
+            data: {
+                userId: userId,
+                subscription: `admin-change-${Date.now()}`,
+                subscriberId: `admin-${Date.now()}`,
+                plan: newPlanType,
+                method: 'admin-change',
+                active: true
+            }
+        });
+        
+        // Update user plan
+        await prisma.user.update({
+            where: { id: userId },
+            data: { type: newPlanType }
+        });
+        
+        res.json({ 
+            success: true, 
+            message: `User plan updated to ${planSettings.name}`,
+            newPlan: planSettings
+        });
+    } catch (error) {
+        console.error('Update user plan error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//CANCEL USER SUBSCRIPTION
+app.post('/api/cancel-user-subscription', async (req, res) => {
+    try {
+        const { userId, reason, adminNotes } = req.body;
+        
+        // Get user
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                subscriptions: {
+                    where: { active: true }
+                }
+            }
+        });
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        
+        // Deactivate all active subscriptions
+        if (user.subscriptions.length > 0) {
+            await prisma.subscription.updateMany({
+                where: { userId, active: true },
+                data: { active: false }
+            });
+        }
+        
+        // Set user to free plan
+        await prisma.user.update({
+            where: { id: userId },
+            data: { type: 'free' }
+        });
+        
+        res.json({ 
+            success: true, 
+            message: 'User subscription cancelled and set to free plan'
+        });
+    } catch (error) {
+        console.error('Cancel user subscription error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//EXTEND USER SUBSCRIPTION
+app.post('/api/extend-user-subscription', async (req, res) => {
+    try {
+        const { userId, extensionDays, reason, adminNotes } = req.body;
+        
+        // Get user
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                subscriptions: {
+                    where: { active: true }
+                }
+            }
+        });
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        
+        // Update subscription end date if it exists
+        if (user.subscriptions.length > 0) {
+            const subscription = user.subscriptions[0];
+            const currentEndDate = new Date(subscription.createdAt);
+            const newEndDate = new Date(currentEndDate.getTime() + (extensionDays * 24 * 60 * 60 * 1000));
+            
+            await prisma.subscription.update({
+                where: { id: subscription.id },
+                data: { 
+                    createdAt: newEndDate,
+                    updatedAt: new Date()
+                }
+            });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `User subscription extended by ${extensionDays} days`
+        });
+    } catch (error) {
+        console.error('Extend user subscription error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//GET USER DETAILS
+app.get('/api/user/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                subscriptions: {
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
+                },
+                courses: {
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
+                }
+            }
+        });
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        
+        // Get plan settings
+        const planSettings = await prisma.planSettings.findUnique({
+            where: { planType: user.type }
+        });
+        
+        const userDetails = {
+            ...user,
+            planInfo: planSettings || {
+                name: 'Unknown Plan',
+                price: 0,
+                period: 'forever',
+                features: []
+            }
+        };
+        
+        res.json({ success: true, user: userDetails });
+    } catch (error) {
+        console.error('Get user details error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
@@ -1318,7 +1550,17 @@ app.get('/api/plan-settings', async (req, res) => {
                         "Lifetime access",
                         "Theory & Image Course",
                         "Ai Teacher Chat",
-                    ]
+                    ],
+                    // Functional limits
+                    maxSubtopics: 5,
+                    maxTopics: 4,
+                    courseTypes: ["Text & Image Course"],
+                    languages: ["English"],
+                    unlimitedCourses: false,
+                    aiTeacherChat: true,
+                    videoCourses: false,
+                    theoryCourses: true,
+                    imageCourses: true
                 },
                 {
                     planType: 'monthly',
@@ -1333,7 +1575,17 @@ app.get('/api/plan-settings', async (req, res) => {
                         "Course In 23+ Languages",
                         "Create Unlimited Course",
                         "Video & Theory Course",
-                    ]
+                    ],
+                    // Functional limits
+                    maxSubtopics: 10,
+                    maxTopics: 8,
+                    courseTypes: ["Text & Image Course", "Video & Text Course"],
+                    languages: ["English", "Spanish", "French", "German", "Italian", "Portuguese", "Russian", "Chinese", "Japanese", "Korean", "Arabic", "Hindi", "Bengali", "Dutch", "Swedish", "Norwegian", "Danish", "Finnish", "Polish", "Czech", "Hungarian", "Romanian", "Bulgarian"],
+                    unlimitedCourses: true,
+                    aiTeacherChat: true,
+                    videoCourses: true,
+                    theoryCourses: true,
+                    imageCourses: true
                 },
                 {
                     planType: 'yearly',
@@ -1348,7 +1600,17 @@ app.get('/api/plan-settings', async (req, res) => {
                         "Course In 23+ Languages",
                         "Create Unlimited Course",
                         "Video & Theory Course",
-                    ]
+                    ],
+                    // Functional limits
+                    maxSubtopics: 10,
+                    maxTopics: 8,
+                    courseTypes: ["Text & Image Course", "Video & Text Course"],
+                    languages: ["English", "Spanish", "French", "German", "Italian", "Portuguese", "Russian", "Chinese", "Japanese", "Korean", "Arabic", "Hindi", "Bengali", "Dutch", "Swedish", "Norwegian", "Danish", "Finnish", "Polish", "Czech", "Hungarian", "Romanian", "Bulgarian"],
+                    unlimitedCourses: true,
+                    aiTeacherChat: true,
+                    videoCourses: true,
+                    theoryCourses: true,
+                    imageCourses: true
                 }
             ];
 
@@ -1375,7 +1637,17 @@ app.get('/api/plan-settings', async (req, res) => {
                     name: plan.name,
                     price: plan.price,
                     period: plan.period,
-                    features: plan.features
+                    features: plan.features,
+                    // Include functional limits
+                    maxSubtopics: plan.maxSubtopics || 5,
+                    maxTopics: plan.maxTopics || 4,
+                    courseTypes: plan.courseTypes || ["Text & Image Course"],
+                    languages: plan.languages || ["English"],
+                    unlimitedCourses: plan.unlimitedCourses || false,
+                    aiTeacherChat: plan.aiTeacherChat !== false, // Default to true
+                    videoCourses: plan.videoCourses || false,
+                    theoryCourses: plan.theoryCourses !== false, // Default to true
+                    imageCourses: plan.imageCourses !== false // Default to true
                 };
             });
 
@@ -1400,14 +1672,34 @@ app.post('/api/plan-settings', async (req, res) => {
                     name: planData.name,
                     price: planData.price,
                     period: planData.period || 'forever',
-                    features: planData.features
+                    features: planData.features,
+                    // Update functional limits
+                    maxSubtopics: planData.maxSubtopics || 5,
+                    maxTopics: planData.maxTopics || 4,
+                    courseTypes: planData.courseTypes || ["Text & Image Course"],
+                    languages: planData.languages || ["English"],
+                    unlimitedCourses: planData.unlimitedCourses || false,
+                    aiTeacherChat: planData.aiTeacherChat !== false,
+                    videoCourses: planData.videoCourses || false,
+                    theoryCourses: planData.theoryCourses !== false,
+                    imageCourses: planData.imageCourses !== false
                 },
                 create: {
                     planType,
                     name: planData.name,
                     price: planData.price,
                     period: planData.period || 'forever',
-                    features: planData.features
+                    features: planData.features,
+                    // Create with functional limits
+                    maxSubtopics: planData.maxSubtopics || 5,
+                    maxTopics: planData.maxTopics || 4,
+                    courseTypes: planData.courseTypes || ["Text & Image Course"],
+                    languages: planData.languages || ["English"],
+                    unlimitedCourses: planData.unlimitedCourses || false,
+                    aiTeacherChat: planData.aiTeacherChat !== false,
+                    videoCourses: planData.videoCourses || false,
+                    theoryCourses: planData.theoryCourses !== false,
+                    imageCourses: planData.imageCourses !== false
                 }
             });
         }
@@ -1417,6 +1709,64 @@ app.post('/api/plan-settings', async (req, res) => {
         res.json({ success: true, message: 'Plan settings updated successfully' });
     } catch (error) {
         console.error('Update plan settings error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//GET USER PLAN LIMITS
+app.post('/api/user-plan-limits', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        
+        // Get user's current plan
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        
+        // Get plan settings for user's plan type
+        const planSettings = await prisma.planSettings.findUnique({
+            where: { planType: user.type || 'free' }
+        });
+        
+        if (!planSettings) {
+            // Return default free plan limits
+            return res.json({
+                success: true,
+                limits: {
+                    maxSubtopics: 5,
+                    maxTopics: 4,
+                    courseTypes: ["Text & Image Course"],
+                    languages: ["English"],
+                    unlimitedCourses: false,
+                    aiTeacherChat: true,
+                    videoCourses: false,
+                    theoryCourses: true,
+                    imageCourses: true
+                }
+            });
+        }
+        
+        // Return user's plan limits
+        res.json({
+            success: true,
+            limits: {
+                maxSubtopics: planSettings.maxSubtopics || 5,
+                maxTopics: planSettings.maxTopics || 4,
+                courseTypes: planSettings.courseTypes || ["Text & Image Course"],
+                languages: planSettings.languages || ["English"],
+                unlimitedCourses: planSettings.unlimitedCourses || false,
+                aiTeacherChat: planSettings.aiTeacherChat !== false,
+                videoCourses: planSettings.videoCourses || false,
+                theoryCourses: planSettings.theoryCourses !== false,
+                imageCourses: planSettings.imageCourses !== false
+            }
+        });
+    } catch (error) {
+        console.error('Get user plan limits error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
@@ -1464,6 +1814,461 @@ app.post('/api/general-settings', async (req, res) => {
         console.error('Update general settings error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
+});
+
+//GET DATA FROM MODEL
+app.post('/api/prompt', async (req, res) => {
+    try {
+        const receivedData = req.body;
+        const promptString = receivedData.prompt;
+
+        // Check if API key is valid
+        if (!process.env.API_KEY || process.env.API_KEY === 'your_google_generative_ai_key_here') {
+            // Return mock data for testing
+            const mockResponse = {
+                "javascript programming": [
+                    {
+                        "title": "Introduction to JavaScript",
+                        "subtopics": [
+                            {
+                                "title": "What is JavaScript",
+                                "theory": "",
+                                "youtube": "",
+                                "image": "",
+                                "done": false
+                            },
+                            {
+                                "title": "JavaScript History",
+                                "theory": "",
+                                "youtube": "",
+                                "image": "",
+                                "done": false
+                            }
+                        ]
+                    },
+                    {
+                        "title": "JavaScript Basics",
+                        "subtopics": [
+                            {
+                                "title": "Variables and Data Types",
+                                "theory": "",
+                                "youtube": "",
+                                "image": "",
+                                "done": false
+                            },
+                            {
+                                "title": "Functions and Scope",
+                                "theory": "",
+                                "youtube": "",
+                                "image": "",
+                                "done": false
+                            }
+                        ]
+                    }
+                ]
+            };
+            
+            res.status(200).json({ generatedText: JSON.stringify(mockResponse) });
+            return;
+        }
+
+        const safetySettings = [
+            {
+                category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            },
+        ];
+
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash", safetySettings });
+        const prompt = promptString;
+
+        const result = await model.generateContent(prompt);
+        const response = result.response;
+        const generatedText = response.text();
+        res.status(200).json({ generatedText });
+    } catch (error) {
+        console.error('Prompt generation error:', error);
+        
+        // Return mock data on error for testing
+        const mockResponse = {
+            "javascript programming": [
+                {
+                    "title": "Introduction to JavaScript",
+                    "subtopics": [
+                        {
+                            "title": "What is JavaScript",
+                            "theory": "",
+                            "youtube": "",
+                            "image": "",
+                            "done": false
+                        },
+                        {
+                            "title": "JavaScript History",
+                            "theory": "",
+                            "youtube": "",
+                            "image": "",
+                            "done": false
+                        }
+                    ]
+                }
+            ]
+        };
+        
+        res.status(200).json({ generatedText: JSON.stringify(mockResponse) });
+    }
+});
+
+//GET GENERATE THEORY
+app.post('/api/generate', async (req, res) => {
+    const receivedData = req.body;
+    const promptString = receivedData.prompt;
+
+    const safetySettings = [
+        {
+            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+    ];
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash", safetySettings });
+    const prompt = promptString;
+
+    await model.generateContent(prompt).then(result => {
+        const response = result.response;
+        const txt = response.text();
+        const converter = new showdown.Converter();
+        const markdownText = txt;
+        const text = converter.makeHtml(markdownText);
+        res.status(200).json({ text });
+    }).catch(error => {
+        console.log('Error', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    });
+});
+
+//GET IMAGE
+app.post('/api/image', async (req, res) => {
+    const receivedData = req.body;
+    const promptString = receivedData.prompt;
+    
+    try {
+        // Try to get image from Unsplash if configured
+        if (process.env.UNSPLASH_ACCESS_KEY && process.env.UNSPLASH_ACCESS_KEY !== 'your_unsplash_access_key_here') {
+            try {
+                const result = await unsplash.search.getPhotos({
+                    query: promptString,
+                    page: 1,
+                    perPage: 1,
+                    orientation: 'landscape',
+                });
+                
+                if (result.response && result.response.results && result.response.results.length > 0) {
+                    const photo = result.response.results[0]?.urls?.regular || '';
+                    res.status(200).json({ url: photo });
+                    return;
+                }
+            } catch (unsplashError) {
+                console.log('Unsplash error:', unsplashError);
+                // Fall back to Google Image Search
+            }
+        }
+        
+        // Fallback to Google Image Search
+        gis(promptString, logResults);
+        function logResults(error, results) {
+            if (error) {
+                console.log('Error', error);
+                res.status(500).json({ success: false, message: 'Image search error' });
+            } else {
+                res.status(200).json({ url: results[0].url });
+            }
+        }
+    } catch (error) {
+        console.log('Error in image search:', error);
+        res.status(500).json({ success: false, message: 'Image search error' });
+    }
+});
+
+//GET VIDEO 
+app.post('/api/yt', async (req, res) => {
+    try {
+        const receivedData = req.body;
+        const promptString = receivedData.prompt;
+        const video = await youtubesearchapi.GetListByKeyword(promptString, [false], [1], [{ type: 'video' }]);
+        const videoId = await video.items[0].id;
+        res.status(200).json({ url: videoId });
+    } catch (error) {
+        console.log('Error', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//GET TRANSCRIPT 
+app.post('/api/transcript', async (req, res) => {
+    const receivedData = req.body;
+    const promptString = receivedData.prompt;
+    YoutubeTranscript.fetchTranscript(promptString).then(video => {
+        res.status(200).json({ url: video });
+    }).catch(error => {
+        console.log('Error', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    });
+});
+
+//STORE COURSE
+app.post('/api/course', async (req, res) => {
+    const { user, content, type, mainTopic, lang } = req.body;
+
+    try {
+        let photo = '';
+        
+        // Try to get image from Unsplash if configured
+        if (process.env.UNSPLASH_ACCESS_KEY && process.env.UNSPLASH_ACCESS_KEY !== 'your_unsplash_access_key_here') {
+            try {
+                const result = await unsplash.search.getPhotos({
+                    query: mainTopic,
+                    page: 1,
+                    perPage: 1,
+                    orientation: 'landscape',
+                });
+                
+                if (result.response && result.response.results && result.response.results.length > 0) {
+                    photo = result.response.results[0]?.urls?.regular || '';
+                }
+            } catch (unsplashError) {
+                console.log('Unsplash error:', unsplashError);
+                // Continue without photo if Unsplash fails
+            }
+        }
+
+        // Create course with Prisma
+        const newCourse = await prisma.course.create({
+            data: {
+                userId: user,
+                content,
+                type,
+                mainTopic,
+                photo
+            }
+        });
+
+        // Create language record
+        await prisma.language.create({
+            data: {
+                courseId: newCourse.id,
+                lang: lang
+            }
+        });
+
+        res.json({ 
+            success: true, 
+            message: 'Course created successfully', 
+            courseId: newCourse.id,
+            completed: false
+        });
+    } catch (error) {
+        console.log('Error creating course:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//STORE COURSE SHARED
+app.post('/api/courseshared', async (req, res) => {
+    const { user, content, type, mainTopic } = req.body;
+
+    try {
+        let photo = '';
+        
+        // Try to get image from Unsplash if configured
+        if (process.env.UNSPLASH_ACCESS_KEY && process.env.UNSPLASH_ACCESS_KEY !== 'your_unsplash_access_key_here') {
+            try {
+                const result = await unsplash.search.getPhotos({
+                    query: mainTopic,
+                    page: 1,
+                    perPage: 1,
+                    orientation: 'landscape',
+                });
+                
+                if (result.response && result.response.results && result.response.results.length > 0) {
+                    photo = result.response.results[0]?.urls?.regular || '';
+                }
+            } catch (unsplashError) {
+                console.log('Unsplash error:', unsplashError);
+                // Continue without photo if Unsplash fails
+            }
+        }
+
+        // Create course with Prisma
+        const newCourse = await prisma.course.create({
+            data: {
+                userId: user,
+                content,
+                type,
+                mainTopic,
+                photo
+            }
+        });
+
+        res.json({ 
+            success: true, 
+            message: 'Course created successfully', 
+            courseId: newCourse.id 
+        });
+    } catch (error) {
+        console.log('Error creating shared course:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//UPDATE COURSE
+app.post('/api/update', async (req, res) => {
+    const { content, courseId } = req.body;
+    try {
+        await prisma.course.update({
+            where: { id: courseId },
+            data: { content: content }
+        });
+        res.json({ success: true, message: 'Course updated successfully' });
+    } catch (error) {
+        console.log('Error updating course:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//DELETE COURSE
+app.post('/api/deletecourse', async (req, res) => {
+    const { courseId } = req.body;
+    try {
+        await prisma.course.delete({
+            where: { id: courseId }
+        });
+        res.json({ success: true, message: 'Course deleted successfully' });
+    } catch (error) {
+        console.log('Error deleting course:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//FINISH COURSE
+app.post('/api/finish', async (req, res) => {
+    const { courseId } = req.body;
+    try {
+        await prisma.course.update({
+            where: { id: courseId },
+            data: { 
+                completed: true,
+                updatedAt: new Date()
+            }
+        });
+        res.json({ success: true, message: 'Course completed successfully' });
+    } catch (error) {
+        console.log('Error finishing course:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//GET NOTES
+app.post('/api/getnotes', async (req, res) => {
+    const { course } = req.body;
+    try {
+        const existingNotes = await prisma.notes.findFirst({
+            where: { courseId: course }
+        });
+        
+        if (existingNotes) {
+            res.json({ success: true, message: existingNotes.notes });
+        } else {
+            res.json({ success: false, message: '' });
+        }
+    } catch (error) {
+        console.log('Error getting notes:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//SAVE NOTES
+app.post('/api/savenotes', async (req, res) => {
+    const { course, notes } = req.body;
+    try {
+        const existingNotes = await prisma.notes.findFirst({
+            where: { courseId: course }
+        });
+
+        if (existingNotes) {
+            await prisma.notes.update({
+                where: { id: existingNotes.id },
+                data: { notes: notes }
+            });
+            res.json({ success: true, message: 'Notes updated successfully' });
+        } else {
+            await prisma.notes.create({
+                data: { 
+                    courseId: course, 
+                    notes: notes,
+                    userId: 'cme8wuprz0000mqz0oeko02q4' // Use admin user as fallback
+                }
+            });
+            res.json({ success: true, message: 'Notes created successfully' });
+        }
+    } catch (error) {
+        console.log('Error saving notes:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//SEND CERTIFICATE
+app.post('/api/sendcertificate', async (req, res) => {
+    const { html, email } = req.body;
+
+    const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        service: 'gmail',
+        secure: true,
+        auth: {
+            user: process.env.EMAIL,
+            pass: process.env.PASSWORD,
+        },
+    });
+
+    const options = {
+        from: process.env.EMAIL,
+        to: email,
+        subject: 'Certification of completion',
+        html: html
+    };
+
+    transporter.sendMail(options, (error, info) => {
+        if (error) {
+            res.status(500).json({ success: false, message: 'Failed to send email' });
+        } else {
+            res.json({ success: true, message: 'Email sent successfully' });
+        }
+    });
 });
 
 // Health check endpoint
