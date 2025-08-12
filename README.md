@@ -45,6 +45,9 @@ Quick checklist for successful deployment.
 ### **🔑 [API Keys Setup](./README/API-KEYS-SETUP.mdc)**
 Configuration status and API keys management.
 
+### **🤖 [Cursor AI Integration](./README/CURSOR-INTEGRATION.mdc)**
+Guide for using .mdc format with Cursor AI for enhanced development.
+
 ## 🛠️ Tech Stack
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
@@ -143,6 +146,7 @@ README/
 ├── SUPABASE-DEPLOYMENT.mdc     # Supabase setup guide
 ├── DEPLOYMENT-CHECKLIST.mdc    # Deployment checklist
 ├── API-KEYS-SETUP.mdc         # API keys configuration
+├── CURSOR-INTEGRATION.mdc     # Cursor AI integration guide
 └── Documentation/             # Additional documentation files
     └── documentation.html     # HTML documentation
 ``` 
