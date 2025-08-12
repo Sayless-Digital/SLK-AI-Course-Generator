@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -12,6 +12,13 @@ import {
   SidebarRail,
   SidebarTrigger
 } from '@/components/ui/sidebar';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { useLocation, Link, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -29,10 +36,12 @@ import {
   Menu,
   FileEdit,
   FileSliders,
+  Banknote,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Button } from '@/components/ui/button';
 import { serverURL } from '@/constants';
 import axios from 'axios';
 import Logo from '../../res/logo.svg';
@@ -40,6 +49,7 @@ import Logo from '../../res/logo.svg';
 const AdminLayout = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Helper to check active route
   const isActive = (path: string) => location.pathname === path;
@@ -93,6 +103,8 @@ const AdminLayout = () => {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-to-br from-background to-muted/20">
+        {/* Desktop Sidebar */}
+        {!isMobile && (
         <Sidebar className="border-r border-border/40">
           <SidebarHeader className="border-b border-border/40 h-12">
             <Link to="/admin" className="flex items-center space-x-2 px-2 h-full">
@@ -221,6 +233,15 @@ const AdminLayout = () => {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Bank Transfers" isActive={isActive('/admin/bank-transfers')}>
+                  <Link to="/admin/bank-transfers" className={cn(isActive('/admin/bank-transfers') && "text-primary")}>
+                    <Banknote />
+                    <span>Bank Transfers</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
 
@@ -238,21 +259,248 @@ const AdminLayout = () => {
           </SidebarFooter>
           <SidebarRail />
         </Sidebar>
+        )}
+
+        {/* Mobile Sheet */}
+        {isMobile && (
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetContent 
+              side="right" 
+              className="w-[300px] sm:w-[400px] p-0 bg-background"
+            >
+              <SheetHeader className="h-12 px-2 border-b border-border/40">
+                <SheetTitle className="flex items-center justify-between h-full">
+                  <div className="flex items-center space-x-2">
+                    <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+                      <img src={Logo} alt="Logo" className='h-5 w-5' />
+                    </div>
+                    <span className="font-display font-medium text-lg">Admin Panel</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 p-0"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <X className="h-5 w-5" />
+                    <span className="sr-only">Close menu</span>
+                  </Button>
+                </SheetTitle>
+              </SheetHeader>
+              
+              <div className="flex flex-col h-full">
+                <nav className="flex-1 px-2 py-6">
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Link 
+                        to="/admin"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <LayoutDashboard className="h-5 w-5" />
+                        <span className="font-medium">Dashboard</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/admin/users"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin/users') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Users className="h-5 w-5" />
+                        <span className="font-medium">Users</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/admin/courses"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin/courses') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <BookOpen className="h-5 w-5" />
+                        <span className="font-medium">Courses</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/admin/paid-users"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin/paid-users') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <DollarSign className="h-5 w-5" />
+                        <span className="font-medium">Paid Users</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/admin/admins"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin/admins') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <UserCog className="h-5 w-5" />
+                        <span className="font-medium">Admins</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/admin/contacts"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin/contacts') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <MessageSquare className="h-5 w-5" />
+                        <span className="font-medium">Contacts</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/admin/blogs"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin/blogs') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <FileSliders className="h-5 w-5" />
+                        <span className="font-medium">Blogs</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/admin/create-blog"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin/create-blog') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <FileEdit className="h-5 w-5" />
+                        <span className="font-medium">Create Blog</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/admin/terms"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin/terms') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <FileText className="h-5 w-5" />
+                        <span className="font-medium">Terms</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/admin/privacy"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin/privacy') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Shield className="h-5 w-5" />
+                        <span className="font-medium">Privacy</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/admin/cancellation"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin/cancellation') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <X className="h-5 w-5" />
+                        <span className="font-medium">Cancellation</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/admin/refund"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin/refund') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <ArrowLeft className="h-5 w-5" />
+                        <span className="font-medium">Refund</span>
+                      </Link>
+                      
+                      <Link 
+                        to="/admin/subscription-billing"
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('/admin/subscription-billing') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <CreditCard className="h-5 w-5" />
+                        <span className="font-medium">Subscription & Billing</span>
+                      </Link>
+                    </div>
+
+                    <div className="space-y-3 pt-4 border-t border-border/40">
+                      <div className="flex items-center space-x-2">
+                        <ThemeToggle />
+                        <span className="text-sm text-muted-foreground">Toggle Theme</span>
+                      </div>
+                    </div>
+                  </div>
+                </nav>
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
 
         <main className="flex-1 overflow-auto p-2">
+          {isMobile && <div className="h-12"></div>}
           {isMobile && (
-            <div className="flex items-center mb-6 bg-background rounded-lg shadow-sm h-12 px-2">
-              <SidebarTrigger className="mr-2">
-                <Menu className="h-6 w-6" />
-              </SidebarTrigger>
-              <div className="flex items-center space-x-2">
-                <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center">
-                  <img src={Logo} alt="Logo" className='h-4 w-4' />
+            <div className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out px-2 h-12 flex items-center shadow-sm bg-background/80 backdrop-blur-sm">
+              <div className="max-w-7xl mx-auto flex items-center justify-between w-full">
+                <div className="flex items-center space-x-2">
+                  <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+                    <img src={Logo} alt="Logo" className='h-5 w-5' />
+                  </div>
+                  <span className="font-display font-medium text-base">Admin Panel</span>
                 </div>
-                <h1 className="text-xl font-semibold">Admin Panel</h1>
-              </div>
-              <div className="ml-auto">
+                <div className="flex items-center space-x-2">
                 <ThemeToggle />
+                  <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                    <SheetTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 p-0"
+                      >
+                        <Menu className="h-5 w-5" />
+                        <span className="sr-only">Toggle menu</span>
+                      </Button>
+                    </SheetTrigger>
+                  </Sheet>
+                </div>
               </div>
             </div>
           )}

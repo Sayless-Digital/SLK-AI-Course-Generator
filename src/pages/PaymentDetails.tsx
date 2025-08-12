@@ -6,14 +6,12 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -22,18 +20,18 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   CreditCard,
   Wallet,
   Building,
-  Smartphone,
   MapPin,
   CheckCircle,
-  CreditCard as CreditCardIcon,
-  Globe,
-  DollarSign,
-  HandCoins
+  ArrowLeft,
+  ArrowRight,
+  Upload,
+  Banknote,
+  User,
+  Mail
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -63,7 +61,7 @@ const plans = {
   yearly: { name: YearType, price: YearCost }
 };
 
-const plansFeartures = [
+const plansFeatures = [
   {
     name: FreeType,
     features: [
@@ -125,8 +123,11 @@ const PaymentMethodButton = ({
 const PaymentDetails = () => {
   const { planId } = useParams<{ planId: string }>();
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState<string>('paypal');
+  const [currentStep, setCurrentStep] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState<string>('banktransfer');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const plan = planId && plans[planId as keyof typeof plans]
     ? plans[planId as keyof typeof plans]
@@ -135,8 +136,15 @@ const PaymentDetails = () => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: sessionStorage.getItem('mName'),
-      lastName: '',
+      firstName: (() => {
+        const fullName = sessionStorage.getItem('mName') || '';
+        return fullName.split(' ')[0] || '';
+      })(),
+      lastName: (() => {
+        const fullName = sessionStorage.getItem('mName') || '';
+        const nameParts = fullName.split(' ');
+        return nameParts.slice(1).join(' ') || '';
+      })(),
       email: sessionStorage.getItem('email'),
       address: '',
       city: '',
@@ -146,409 +154,124 @@ const PaymentDetails = () => {
     },
   });
 
-  const onSubmit = (data: FormValues) => {
+  const nextStep = () => {
+    if (currentStep < 2) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const onSubmit = async (data: FormValues) => {
     setIsProcessing(true);
-    if (paymentMethod === 'paypal') {
-      startPayPal(data);
-    } else if (paymentMethod === 'stripe') {
-      startStripe();
-    } else if (paymentMethod === 'flutterwave') {
-      setIsProcessing(false);
-      handleFlutterPayment({
-        callback: (response) => {
-          sessionStorage.setItem('stripe', "" + response.transaction_id);
-          sessionStorage.setItem('method', 'flutterwave');
-          sessionStorage.setItem('plan', plan.name);
-          navigate('/payment-success/' + response.transaction_id);
-          closePaymentModal();
-        },
-        onClose: () => { },
-      });
-    } else if (paymentMethod === 'paystack') {
-      startPaystack(data);
-    } else if (paymentMethod === 'razorpay') {
-      startRazorpay(data);
+    
+    if (paymentMethod === 'banktransfer') {
+      await submitBankTransfer(data);
     } else {
+      setIsProcessing(false);
+      toast({
+        title: "Error",
+        description: "Invalid payment method selected.",
+      });
+    }
+  };
+
+  const submitBankTransfer = async (data: FormValues) => {
+    if (!receiptFile) {
+      setIsProcessing(false);
+      toast({
+        title: "Error",
+        description: "Please upload a payment receipt.",
+      });
       return;
     }
 
-  };
+    const formData = new FormData();
+    formData.append('receipt', receiptFile);
+    formData.append('planId', planId || '');
+    formData.append('planName', plan.name);
+    formData.append('planPrice', plan.price.toString());
+    formData.append('userId', sessionStorage.getItem('uid') || '');
+    formData.append('userEmail', data.email);
+    formData.append('userName', `${data.firstName} ${data.lastName}`);
+    formData.append('address', data.address);
+    formData.append('city', data.city);
+    formData.append('state', data.state);
+    formData.append('zipCode', data.zipCode);
+    formData.append('country', data.country);
 
-
-  async function startRazorpay(data: FormValues) {
-
-    const fullAddress = data.address + ' ' + data.state + ' ' + data.zipCode + ' ' + data.country;
-    let planId = razorpayPlanIdTwo;
-    if (plan.name === 'Monthly Plan') {
-      planId = razorpayPlanIdOne;
-    }
-    const dataToSend = {
-      plan: planId,
-      email: data.email,
-      fullAddress: fullAddress
-    };
     try {
-      const postURL = serverURL + '/api/razorpaycreate';
-      const res = await axios.post(postURL, dataToSend);
-      sessionStorage.setItem('method', 'razorpay');
-      setIsProcessing(false);
-      sessionStorage.setItem('plan', plan.name);
-      window.open(res.data.short_url, '_blank');
-      navigate('/payment-pending', { state: { sub: res.data.id, link: res.data.short_url, planName: plan.name, planCost: plan.price } });
+      const postURL = serverURL + '/api/banktransfer';
+      const response = await axios.post(postURL, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          const progress = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+          setUploadProgress(progress);
+        },
+      });
+
+      if (response.data.success) {
+        toast({
+          title: "Payment Receipt Submitted",
+          description: "Your payment receipt has been submitted for review. You will be notified once approved.",
+        });
+        navigate('/payment-pending', { 
+          state: { 
+            sub: response.data.paymentId, 
+            planName: plan.name, 
+            planCost: plan.price,
+            method: 'banktransfer'
+          } 
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.data.message || "Failed to submit payment receipt.",
+        });
+      }
     } catch (error) {
       console.error(error);
-      setIsProcessing(false);
       toast({
         title: "Error",
-        description: "Internal Server Error",
+        description: "Failed to submit payment receipt. Please try again.",
       });
-    }
-  }
-
-  async function startPaystack(data: FormValues) {
-    let planId = paystackPlanIdTwo;
-    let amountInZar = amountInZarTwo;
-    if (plan.name === 'Monthly Plan') {
-      planId = paystackPlanIdOne;
-      amountInZar = amountInZarOne;
-    }
-    const dataToSend = {
-      planId: planId,
-      amountInZar,
-      email: data.email
-    };
-    try {
-      const postURL = serverURL + '/api/paystackpayment';
-      const res = await axios.post(postURL, dataToSend);
-      sessionStorage.setItem('paystack', res.data.id);
-      sessionStorage.setItem('method', 'paystack');
-      sessionStorage.setItem('plan', plan.name);
+    } finally {
       setIsProcessing(false);
-      window.location.href = res.data.url;
-
-    } catch (error) {
-      console.error(error);
-      setIsProcessing(false);
-      toast({
-        title: "Error",
-        description: "Internal Server Error",
-      });
-    }
-  }
-
-  const config = {
-    public_key: flutterwavePublicKey,
-    tx_ref: Date.now(),
-    currency: 'USD',
-    amount: plan.name === 'Monthly Plan' ? MonthCost : YearCost,
-    payment_options: "card",
-    payment_plan: plan.name === 'Monthly Plan' ? flutterwavePlanIdOne : flutterwavePlanIdTwo,
-    customer: {
-      email: sessionStorage.getItem('email'),
-      name: sessionStorage.getItem('mName'),
-    },
-    customizations: {
-      title: appName,
-      description: plan.name + 'Subscription Payment',
-      logo: appLogo,
-    },
-  };
-
-  const handleFlutterPayment = useFlutterwave(config);
-
-  async function startStripe() {
-    let planId = stripePlanIdTwo;
-    if (plan.name === 'Monthly Plan') {
-      planId = stripePlanIdOne;
-    }
-    const dataToSend = {
-      planId: planId
-    };
-    try {
-      const postURL = serverURL + '/api/stripepayment';
-      const res = await axios.post(postURL, dataToSend);
-      sessionStorage.setItem('stripe', res.data.id);
-      sessionStorage.setItem('method', 'stripe');
-      sessionStorage.setItem('plan', plan.name);
-      setIsProcessing(false);
-      window.location.href = res.data.url;
-
-    } catch (error) {
-      console.error(error);
-      setIsProcessing(false);
-      toast({
-        title: "Error",
-        description: "Internal Server Error",
-      });
-    }
-  }
-
-  const countryList = [
-    { name: "Afghanistan", code: "AF" },
-    { name: "Albania", code: "AL" },
-    { name: "Algeria", code: "DZ" },
-    { name: "Andorra", code: "AD" },
-    { name: "Angola", code: "AO" },
-    { name: "Antigua and Barbuda", code: "AG" },
-    { name: "Argentina", code: "AR" },
-    { name: "Armenia", code: "AM" },
-    { name: "Australia", code: "AU" },
-    { name: "Austria", code: "AT" },
-    { name: "Azerbaijan", code: "AZ" },
-    { name: "Bahamas", code: "BS" },
-    { name: "Bahrain", code: "BH" },
-    { name: "Bangladesh", code: "BD" },
-    { name: "Barbados", code: "BB" },
-    { name: "Belarus", code: "BY" },
-    { name: "Belgium", code: "BE" },
-    { name: "Belize", code: "BZ" },
-    { name: "Benin", code: "BJ" },
-    { name: "Bhutan", code: "BT" },
-    { name: "Bolivia", code: "BO" },
-    { name: "Bosnia and Herzegovina", code: "BA" },
-    { name: "Botswana", code: "BW" },
-    { name: "Brazil", code: "BR" },
-    { name: "Brunei Darussalam", code: "BN" },
-    { name: "Bulgaria", code: "BG" },
-    { name: "Burkina Faso", code: "BF" },
-    { name: "Burundi", code: "BI" },
-    { name: "Cabo Verde", code: "CV" },
-    { name: "Cambodia", code: "KH" },
-    { name: "Cameroon", code: "CM" },
-    { name: "Canada", code: "CA" },
-    { name: "Central African Republic", code: "CF" },
-    { name: "Chad", code: "TD" },
-    { name: "Chile", code: "CL" },
-    { name: "China", code: "CN" },
-    { name: "Colombia", code: "CO" },
-    { name: "Comoros", code: "KM" },
-    { name: "Congo (Congo-Brazzaville)", code: "CG" },
-    { name: "Congo (Democratic Republic) (Congo-Kinshasa)", code: "CD" },
-    { name: "Costa Rica", code: "CR" },
-    { name: "Croatia", code: "HR" },
-    { name: "Cuba", code: "CU" },
-    { name: "Cyprus", code: "CY" },
-    { name: "Czech Republic", code: "CZ" },
-    { name: "Denmark", code: "DK" },
-    { name: "Djibouti", code: "DJ" },
-    { name: "Dominica", code: "DM" },
-    { name: "Dominican Republic", code: "DO" },
-    { name: "Ecuador", code: "EC" },
-    { name: "Egypt", code: "EG" },
-    { name: "El Salvador", code: "SV" },
-    { name: "Equatorial Guinea", code: "GQ" },
-    { name: "Eritrea", code: "ER" },
-    { name: "Estonia", code: "EE" },
-    { name: "Eswatini (fmr. 'Swaziland')", code: "SZ" },
-    { name: "Ethiopia", code: "ET" },
-    { name: "Fiji", code: "FJ" },
-    { name: "Finland", code: "FI" },
-    { name: "France", code: "FR" },
-    { name: "Gabon", code: "GA" },
-    { name: "Gambia", code: "GM" },
-    { name: "Georgia", code: "GE" },
-    { name: "Germany", code: "DE" },
-    { name: "Ghana", code: "GH" },
-    { name: "Greece", code: "GR" },
-    { name: "Grenada", code: "GD" },
-    { name: "Guatemala", code: "GT" },
-    { name: "Guinea", code: "GN" },
-    { name: "Guinea-Bissau", code: "GW" },
-    { name: "Guyana", code: "GY" },
-    { name: "Haiti", code: "HT" },
-    { name: "Honduras", code: "HN" },
-    { name: "Hungary", code: "HU" },
-    { name: "Iceland", code: "IS" },
-    { name: "India", code: "IN" },
-    { name: "Indonesia", code: "ID" },
-    { name: "Iran", code: "IR" },
-    { name: "Iraq", code: "IQ" },
-    { name: "Ireland", code: "IE" },
-    { name: "Israel", code: "IL" },
-    { name: "Italy", code: "IT" },
-    { name: "Jamaica", code: "JM" },
-    { name: "Japan", code: "JP" },
-    { name: "Jordan", code: "JO" },
-    { name: "Kazakhstan", code: "KZ" },
-    { name: "Kenya", code: "KE" },
-    { name: "Kiribati", code: "KI" },
-    { name: "Korea (North)", code: "KP" },
-    { name: "Korea (South)", code: "KR" },
-    { name: "Kuwait", code: "KW" },
-    { name: "Kyrgyzstan", code: "KG" },
-    { name: "Laos", code: "LA" },
-    { name: "Latvia", code: "LV" },
-    { name: "Lebanon", code: "LB" },
-    { name: "Lesotho", code: "LS" },
-    { name: "Liberia", code: "LR" },
-    { name: "Libya", code: "LY" },
-    { name: "Liechtenstein", code: "LI" },
-    { name: "Lithuania", code: "LT" },
-    { name: "Luxembourg", code: "LU" },
-    { name: "Madagascar", code: "MG" },
-    { name: "Malawi", code: "MW" },
-    { name: "Malaysia", code: "MY" },
-    { name: "Maldives", code: "MV" },
-    { name: "Mali", code: "ML" },
-    { name: "Malta", code: "MT" },
-    { name: "Marshall Islands", code: "MH" },
-    { name: "Mauritania", code: "MR" },
-    { name: "Mauritius", code: "MU" },
-    { name: "Mexico", code: "MX" },
-    { name: "Micronesia", code: "FM" },
-    { name: "Moldova", code: "MD" },
-    { name: "Monaco", code: "MC" },
-    { name: "Mongolia", code: "MN" },
-    { name: "Montenegro", code: "ME" },
-    { name: "Morocco", code: "MA" },
-    { name: "Mozambique", code: "MZ" },
-    { name: "Myanmar (Burma)", code: "MM" },
-    { name: "Namibia", code: "NA" },
-    { name: "Nauru", code: "NR" },
-    { name: "Nepal", code: "NP" },
-    { name: "Netherlands", code: "NL" },
-    { name: "New Zealand", code: "NZ" },
-    { name: "Nicaragua", code: "NI" },
-    { name: "Niger", code: "NE" },
-    { name: "Nigeria", code: "NG" },
-    { name: "North Macedonia", code: "MK" },
-    { name: "Norway", code: "NO" },
-    { name: "Oman", code: "OM" },
-    { name: "Pakistan", code: "PK" },
-    { name: "Palau", code: "PW" },
-    { name: "Palestine", code: "PS" },
-    { name: "Panama", code: "PA" },
-    { name: "Papua New Guinea", code: "PG" },
-    { name: "Paraguay", code: "PY" },
-    { name: "Peru", code: "PE" },
-    { name: "Philippines", code: "PH" },
-    { name: "Poland", code: "PL" },
-    { name: "Portugal", code: "PT" },
-    { name: "Qatar", code: "QA" },
-    { name: "Romania", code: "RO" },
-    { name: "Russia", code: "RU" },
-    { name: "Rwanda", code: "RW" },
-    { name: "Saint Kitts and Nevis", code: "KN" },
-    { name: "Saint Lucia", code: "LC" },
-    { name: "Saint Vincent and the Grenadines", code: "VC" },
-    { name: "Samoa", code: "WS" },
-    { name: "San Marino", code: "SM" },
-    { name: "Sao Tome and Principe", code: "ST" },
-    { name: "Saudi Arabia", code: "SA" },
-    { name: "Senegal", code: "SN" },
-    { name: "Serbia", code: "RS" },
-    { name: "Seychelles", code: "SC" },
-    { name: "Sierra Leone", code: "SL" },
-    { name: "Singapore", code: "SG" },
-    { name: "Slovakia", code: "SK" },
-    { name: "Slovenia", code: "SI" },
-    { name: "Solomon Islands", code: "SB" },
-    { name: "Somalia", code: "SO" },
-    { name: "South Africa", code: "ZA" },
-    { name: "South Sudan", code: "SS" },
-    { name: "Spain", code: "ES" },
-    { name: "Sri Lanka", code: "LK" },
-    { name: "Sudan", code: "SD" },
-    { name: "Suriname", code: "SR" },
-    { name: "Sweden", code: "SE" },
-    { name: "Switzerland", code: "CH" },
-    { name: "Syria", code: "SY" },
-    { name: "Taiwan", code: "TW" },
-    { name: "Tajikistan", code: "TJ" },
-    { name: "Tanzania", code: "TZ" },
-    { name: "Thailand", code: "TH" },
-    { name: "Timor-Leste", code: "TL" },
-    { name: "Togo", code: "TG" },
-    { name: "Tonga", code: "TO" },
-    { name: "Trinidad and Tobago", code: "TT" },
-    { name: "Tunisia", code: "TN" },
-    { name: "Turkey", code: "TR" },
-    { name: "Turkmenistan", code: "TM" },
-    { name: "Tuvalu", code: "TV" },
-    { name: "Uganda", code: "UG" },
-    { name: "Ukraine", code: "UA" },
-    { name: "United Arab Emirates", code: "AE" },
-    { name: "United Kingdom", code: "GB" },
-    { name: "United States", code: "US" },
-    { name: "Uruguay", code: "UY" },
-    { name: "Uzbekistan", code: "UZ" },
-    { name: "Vanuatu", code: "VU" },
-    { name: "Vatican City", code: "VA" },
-    { name: "Venezuela", code: "VE" },
-    { name: "Vietnam", code: "VN" },
-    { name: "Yemen", code: "YE" },
-    { name: "Zambia", code: "ZM" },
-    { name: "Zimbabwe", code: "ZW" }
-  ];
-
-  const normalize = (str) => str.toLowerCase().replace(/\s+/g, "");
-
-  async function startPayPal(data: FormValues) {
-
-    let planId = paypalPlanIdTwo;
-    if (plan.name === "Monthly Plan") {
-      planId = paypalPlanIdOne;
-    }
-    const codeCountry = findCountryCode(data.country);
-    const dataToSend = {
-      planId: planId,
-      email: data.email,
-      name: data.firstName,
-      lastName: data.lastName,
-      post: data.zipCode,
-      address: data.address,
-      country: codeCountry,
-      brand: companyName,
-      admin: data.state
-    };
-    try {
-      const postURL = serverURL + '/api/paypal';
-      const res = await axios.post(postURL, dataToSend);
-      sessionStorage.setItem('method', 'paypal');
-      sessionStorage.setItem('plan', plan.name);
-      setIsProcessing(false);
-      const links = res.data.links;
-      const approveLink = links.find(link => link.rel === "approve");
-      const approveHref = approveLink ? approveLink.href : null;
-      window.location.href = approveHref;
-    } catch (error) {
-      console.error(error);
-      setIsProcessing(false);
-      toast({
-        title: "Error",
-        description: "Internal Server Error",
-      });
-    }
-  }
-
-  const findCountryCode = (country) => {
-    const normalizedInput = normalize(country);
-
-    const match = countryList.find(
-      (item) => normalize(item.name) === normalizedInput
-    );
-
-    if (match) {
-      return match.code;
-    } else {
-      return "US";
+      setUploadProgress(0);
     }
   };
 
-  return (
-    <div className="container max-w-5xl mx-auto py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Complete Your Purchase</h1>
-        <p className="text-muted-foreground">
-          You're upgrading to the {plan.name}
-        </p>
+  const renderStepIndicator = () => (
+    <div className="flex items-center justify-center mb-8">
+      <div className="flex items-center space-x-4">
+        {[1, 2].map((step) => (
+          <div key={step} className="flex items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+              currentStep >= step 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-muted text-muted-foreground'
+            }`}>
+              {step}
+            </div>
+            {step < 2 && (
+              <div className={`w-12 h-0.5 mx-2 ${
+                currentStep > step ? 'bg-primary' : 'bg-muted'
+              }`} />
+            )}
+          </div>
+        ))}
       </div>
+    </div>
+  );
 
-      <div className="grid md:grid-cols-3 gap-8">
-        {/* Left Column: Payment Info */}
-        <div className="md:col-span-2">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+  const renderStep1 = () => (
+    <div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -602,20 +325,7 @@ const PaymentDetails = () => {
                       </FormItem>
                     )}
                   />
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <MapPin className="mr-2 h-5 w-5" />
-                    Shipping Address
-                  </CardTitle>
-                  <CardDescription>
-                    Where should we send your receipt?
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
                   <FormField
                     control={form.control}
                     name="address"
@@ -690,88 +400,116 @@ const PaymentDetails = () => {
                 </CardContent>
               </Card>
 
+      <div className="flex justify-end">
+        <Button onClick={nextStep} className="flex items-center">
+          Next Step
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+
+
+
+  const renderStep2 = () => (
+    <div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <CreditCard className="mr-2 h-5 w-5" />
-                    Payment Method
+            <Upload className="mr-2 h-5 w-5" />
+            Upload Payment Receipt
                   </CardTitle>
                   <CardDescription>
-                    Select your preferred payment method
+                    Upload your payment receipt for manual verification
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <Tabs value={paymentMethod} onValueChange={setPaymentMethod} className="w-full">
-                    <TabsList className="grid grid-cols-5 mb-6">
-                      {paypalEnabled ? <TabsTrigger value="paypal">PayPal</TabsTrigger> : null}
-                      {stripeEnabled ? <TabsTrigger value="stripe">Stripe</TabsTrigger> : null}
-                      {flutterwaveEnabled ? <TabsTrigger value="flutterwave">Flutterwave</TabsTrigger> : null}
-                      {paystackEnabled ? <TabsTrigger value="paystack">Paystack</TabsTrigger> : null}
-                      {razorpayEnabled ? <TabsTrigger value="razorpay">Razorpay</TabsTrigger> : null}
-                    </TabsList>
+                <CardContent className="space-y-6">
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Bank Transfer Instructions:</h4>
+                    <div className="space-y-2 text-sm">
+                      <p><strong>Bank Name:</strong> Your Bank Name</p>
+                      <p><strong>Account Number:</strong> 1234567890</p>
+                      <p><strong>Account Holder:</strong> Your Company Name</p>
+                      <p><strong>Amount:</strong> ${plan.price}</p>
+                      <p><strong>Reference:</strong> {sessionStorage.getItem('uid')}</p>
+                    </div>
+                  </div>
 
-                    <TabsContent value="paypal">
-                      <div className="flex flex-col items-center justify-center space-y-4 py-8">
-                        <Globe className="h-12 w-12 text-blue-500" />
-                        <p className="text-center">
-                          You'll be redirected to PayPal to complete your purchase securely.
-                        </p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Upload Payment Receipt
+                      </label>
+                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                          className="hidden"
+                          id="receipt-upload"
+                        />
+                        <label htmlFor="receipt-upload" className="cursor-pointer">
+                          <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">
+                            Click to upload or drag and drop
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            PNG, JPG, PDF up to 10MB
+                          </p>
+                        </label>
                       </div>
-                    </TabsContent>
+                      {receiptFile && (
+                        <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/30 rounded text-sm">
+                          ✓ {receiptFile.name} selected
+                        </div>
+                      )}
+                    </div>
 
-                    <TabsContent value="stripe">
-                      <div className="flex flex-col items-center justify-center space-y-4 py-8">
-                        <CreditCardIcon className="h-12 w-12 text-indigo-500" />
-                        <p className="text-center">
-                          You'll be redirected to Stripe to complete your purchase securely.
-                        </p>
+                    {uploadProgress > 0 && uploadProgress < 100 && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Uploading...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div 
+                            className="bg-primary h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
                       </div>
-                    </TabsContent>
+                    )}
+                  </div>
 
-                    <TabsContent value="flutterwave">
-                      <div className="flex flex-col items-center justify-center space-y-4 py-8">
-                        <Smartphone className="h-12 w-12 text-orange-500" />
-                        <p className="text-center">
-                          You'll be redirected to Flutterwave to complete your purchase securely.
-                        </p>
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="paystack">
-                      <div className="flex flex-col items-center justify-center space-y-4 py-8">
-                        <HandCoins className="h-12 w-12 text-purple-500" />
-                        <p className="text-center">
-                          You'll be redirected to paystack to complete your purchase securely.
-                        </p>
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="razorpay">
-                      <div className="flex flex-col items-center justify-center space-y-4 py-8">
-                        <DollarSign className="h-12 w-12 text-blue-600" />
-                        <p className="text-center">
-                          You'll be redirected to Razorpay to complete your purchase securely.
-                        </p>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
+                  <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2 text-blue-900 dark:text-blue-100">Important:</h4>
+                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                      <li>• Please include your user ID as reference: {sessionStorage.getItem('uid')}</li>
+                      <li>• Upload a clear screenshot or PDF of your payment receipt</li>
+                      <li>• Your subscription will be activated after manual verification</li>
+                      <li>• You will receive an email notification once approved</li>
+                    </ul>
+                  </div>
                 </CardContent>
-                <CardFooter>
-                  <Button
-                    type="submit"
-                    className="w-full bg-primary"
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? "Processing..." : `Pay $${plan.price}`}
-                  </Button>
-                </CardFooter>
-              </Card>
-            </form>
-          </Form>
-        </div>
+      </Card>
 
-        {/* Right Column: Order Summary */}
-        <div>
+      <div className="flex justify-between">
+        <Button variant="outline" onClick={prevStep} className="flex items-center">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Previous
+        </Button>
+                  <Button
+          onClick={form.handleSubmit(onSubmit)}
+                    className="w-full bg-primary"
+                    disabled={isProcessing || !receiptFile}
+                  >
+                    {isProcessing ? "Submitting..." : "Submit Payment Receipt"}
+                  </Button>
+      </div>
+        </div>
+  );
+
+  const renderOrderSummary = () => (
           <Card className="sticky top-6">
             <CardHeader>
               <CardTitle>Order Summary</CardTitle>
@@ -782,27 +520,19 @@ const PaymentDetails = () => {
                 <span>${plan.price}</span>
               </div>
 
-              <Separator />
-
-              <div className="flex justify-between font-bold">
-                <span>Total</span>
-                <span>${plan.price}</span>
-              </div>
-
               <div className="bg-muted/50 p-4 rounded-lg mt-6">
                 <h4 className="font-medium mb-2">What's included:</h4>
                 <ul className="space-y-2 text-sm">
-
-                  {plansFeartures.map((item, index) =>
+            {plansFeatures.map((item, index) =>
                   (
                     <>
                       {item.name === plan.name ?
                         <>
-                          {plansFeartures[index].features.map((item, index) =>
+                    {plansFeatures[index].features.map((feature, featureIndex) =>
                           (
-                            <li className="flex items-center">
+                      <li key={featureIndex} className="flex items-center">
                               <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                              {item}
+                        {feature}
                             </li>
                           ))}
                         </>
@@ -815,6 +545,33 @@ const PaymentDetails = () => {
               </div>
             </CardContent>
           </Card>
+  );
+
+  return (
+    <div className="w-full px-2 pt-2">
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold tracking-tight">Complete Your Purchase</h1>
+        <p className="text-muted-foreground">
+          You're upgrading to the {plan.name}
+        </p>
+      </div>
+
+      {renderStepIndicator()}
+
+      <div className="grid md:grid-cols-3 gap-8">
+        {/* Left Column: Form Steps */}
+        <div className="md:col-span-2">
+          <Form {...form}>
+                         <form className="space-y-8">
+               {currentStep === 1 && renderStep1()}
+               {currentStep === 2 && renderStep2()}
+             </form>
+          </Form>
+        </div>
+
+        {/* Right Column: Order Summary */}
+        <div>
+          {renderOrderSummary()}
         </div>
       </div>
     </div>

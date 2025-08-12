@@ -15,6 +15,7 @@ import axios from 'axios';
 import Stripe from 'stripe';
 import Flutterwave from 'flutterwave-node-v3';
 import { PrismaClient } from '@prisma/client';
+import fileUpload from 'express-fileupload';
 
 // Load environment variables
 dotenv.config();
@@ -43,6 +44,13 @@ app.use(cors({
 const PORT = process.env.PORT || 3001;
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
+app.use(fileUpload({
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  createParentPath: true
+}));
+
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
 
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
@@ -850,6 +858,363 @@ app.post('/api/create-admin', async (req, res) => {
         });
     } catch (error) {
         console.error('Create admin error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//PROFILE UPDATE
+app.post('/api/profile', async (req, res) => {
+    const { email, mName, password, uid } = req.body;
+    try {
+        const updateData = {
+            email: email,
+            mName: mName
+        };
+
+        if (password && password !== '') {
+            updateData.password = password;
+        }
+
+        await prisma.user.update({
+            where: { id: uid },
+            data: updateData
+        });
+
+        res.json({ success: true, message: 'Profile Updated' });
+    } catch (error) {
+        console.error('Profile update error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//DELETE USER
+app.post('/api/deleteuser', async (req, res) => {
+    const { userId } = req.body;
+    try {
+        await prisma.user.delete({
+            where: { id: userId }
+        });
+
+        res.json({ success: true, message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//GET SUBSCRIPTION DETAILS
+app.post('/api/subscriptiondetail', async (req, res) => {
+    try {
+        const { uid, email } = req.body;
+
+        const userDetails = await prisma.subscription.findFirst({
+            where: { userId: uid }
+        });
+
+        if (!userDetails) {
+            return res.status(404).json({ success: false, message: 'No subscription found' });
+        }
+
+        if (userDetails.method === 'stripe') {
+            const subscription = await stripe.subscriptions.retrieve(
+                userDetails.subscriberId
+            );
+            res.json({ session: subscription, method: userDetails.method });
+        } else if (userDetails.method === 'paypal') {
+            const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
+            const PAYPAL_APP_SECRET_KEY = process.env.PAYPAL_APP_SECRET_KEY;
+            const auth = Buffer.from(PAYPAL_CLIENT_ID + ":" + PAYPAL_APP_SECRET_KEY).toString("base64");
+            const response = await fetch(`https://api-m.paypal.com/v1/billing/subscriptions/${userDetails.subscription}`, {
+                headers: {
+                    'Authorization': 'Basic ' + auth,
+                    'Content-Type': 'application/json'
+                }
+            });
+            const session = await response.json();
+            res.json({ session: session, method: userDetails.method });
+        } else {
+            // For other payment methods, return the subscription details as is
+            res.json({ session: userDetails, method: userDetails.method });
+        }
+    } catch (error) {
+        console.error('Subscription detail error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//STRIPE CANCEL SUBSCRIPTION
+app.post('/api/stripecancel', async (req, res) => {
+    try {
+        const { id, email } = req.body;
+        
+        await stripe.subscriptions.cancel(id);
+        
+        // Update subscription status in database
+        await prisma.subscription.updateMany({
+            where: { subscriberId: id },
+            data: { active: false }
+        });
+        
+        // Update user type to free
+        await prisma.user.updateMany({
+            where: { email },
+            data: { type: 'free' }
+        });
+        
+        res.json({ success: true, message: 'Subscription cancelled successfully' });
+    } catch (error) {
+        console.error('Stripe cancel error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//PAYPAL CANCEL SUBSCRIPTION
+app.post('/api/paypalcancel', async (req, res) => {
+    try {
+        const { id, email } = req.body;
+        
+        const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
+        const PAYPAL_APP_SECRET_KEY = process.env.PAYPAL_APP_SECRET_KEY;
+        const auth = Buffer.from(PAYPAL_CLIENT_ID + ":" + PAYPAL_APP_SECRET_KEY).toString("base64");
+        
+        await fetch(`https://api-m.paypal.com/v1/billing/subscriptions/${id}/cancel`, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + auth,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        // Update subscription status in database
+        await prisma.subscription.updateMany({
+            where: { subscription: id },
+            data: { active: false }
+        });
+        
+        // Update user type to free
+        await prisma.user.updateMany({
+            where: { email },
+            data: { type: 'free' }
+        });
+        
+        res.json({ success: true, message: 'Subscription cancelled successfully' });
+    } catch (error) {
+        console.error('PayPal cancel error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//PAYSTACK CANCEL SUBSCRIPTION
+app.post('/api/paystackcancel', async (req, res) => {
+    try {
+        const { code, token, email } = req.body;
+        
+        // Paystack cancellation logic would go here
+        // This is a placeholder as Paystack API integration would need specific implementation
+        
+        // Update subscription status in database
+        await prisma.subscription.updateMany({
+            where: { subscription: code },
+            data: { active: false }
+        });
+        
+        // Update user type to free
+        await prisma.user.updateMany({
+            where: { email },
+            data: { type: 'free' }
+        });
+        
+        res.json({ success: true, message: 'Subscription cancelled successfully' });
+    } catch (error) {
+        console.error('Paystack cancel error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//FLUTTERWAVE CANCEL SUBSCRIPTION
+app.post('/api/flutterwavecancel', async (req, res) => {
+    try {
+        const { code, token, email } = req.body;
+        
+        // Flutterwave cancellation logic would go here
+        // This is a placeholder as Flutterwave API integration would need specific implementation
+        
+        // Update subscription status in database
+        await prisma.subscription.updateMany({
+            where: { subscription: code },
+            data: { active: false }
+        });
+        
+        // Update user type to free
+        await prisma.user.updateMany({
+            where: { email },
+            data: { type: 'free' }
+        });
+        
+        res.json({ success: true, message: 'Subscription cancelled successfully' });
+    } catch (error) {
+        console.error('Flutterwave cancel error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//RAZORPAY CANCEL SUBSCRIPTION
+app.post('/api/razorpaycancel', async (req, res) => {
+    try {
+        const { id, email } = req.body;
+        
+        // Razorpay cancellation logic would go here
+        // This is a placeholder as Razorpay API integration would need specific implementation
+        
+        // Update subscription status in database
+        await prisma.subscription.updateMany({
+            where: { subscription: id },
+            data: { active: false }
+        });
+        
+        // Update user type to free
+        await prisma.user.updateMany({
+            where: { email },
+            data: { type: 'free' }
+        });
+        
+        res.json({ success: true, message: 'Subscription cancelled successfully' });
+    } catch (error) {
+        console.error('Razorpay cancel error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//BANK TRANSFER PAYMENT
+app.post('/api/banktransfer', async (req, res) => {
+    try {
+        const { planId, planName, planPrice, userId, userEmail, userName, address, city, state, zipCode, country } = req.body;
+        
+        // Handle file upload
+        if (!req.files || !req.files.receipt) {
+            return res.status(400).json({ success: false, message: 'Payment receipt is required' });
+        }
+
+        const receiptFile = req.files.receipt;
+        const fileName = `receipt_${userId}_${Date.now()}_${receiptFile.name}`;
+        
+        // Save file to uploads directory
+        const uploadPath = `./uploads/receipts/${fileName}`;
+        receiptFile.mv(uploadPath, async (err) => {
+            if (err) {
+                console.error('File upload error:', err);
+                return res.status(500).json({ success: false, message: 'Failed to upload receipt' });
+            }
+
+            try {
+                // Create bank transfer record
+                const bankTransfer = await prisma.bankTransfer.create({
+                    data: {
+                        userId,
+                        userEmail,
+                        userName,
+                        planId,
+                        planName,
+                        planPrice: parseFloat(planPrice),
+                        receiptPath: fileName,
+                        address,
+                        city,
+                        state,
+                        zipCode,
+                        country,
+                        status: 'pending'
+                    }
+                });
+
+                res.json({ 
+                    success: true, 
+                    message: 'Payment receipt submitted successfully',
+                    paymentId: bankTransfer.id
+                });
+            } catch (dbError) {
+                console.error('Database error:', dbError);
+                res.status(500).json({ success: false, message: 'Failed to save payment record' });
+            }
+        });
+    } catch (error) {
+        console.error('Bank transfer error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//APPROVE BANK TRANSFER (Admin only)
+app.post('/api/approve-banktransfer', async (req, res) => {
+    try {
+        const { paymentId, action } = req.body; // action: 'approve' or 'reject'
+        
+        const bankTransfer = await prisma.bankTransfer.findUnique({
+            where: { id: paymentId }
+        });
+
+        if (!bankTransfer) {
+            return res.status(404).json({ success: false, message: 'Payment not found' });
+        }
+
+        if (action === 'approve') {
+            // Update bank transfer status
+            await prisma.bankTransfer.update({
+                where: { id: paymentId },
+                data: { status: 'approved' }
+            });
+
+            // Create subscription
+            await prisma.subscription.create({
+                data: {
+                    userId: bankTransfer.userId,
+                    subscription: `bank_${paymentId}`,
+                    subscriberId: paymentId,
+                    plan: bankTransfer.planName,
+                    method: 'banktransfer',
+                    active: true
+                }
+            });
+
+            // Update user type
+            await prisma.user.update({
+                where: { id: bankTransfer.userId },
+                data: { type: bankTransfer.planId }
+            });
+
+            // Send approval email (you can implement this)
+            // await sendApprovalEmail(bankTransfer.userEmail, bankTransfer.planName);
+
+            res.json({ success: true, message: 'Payment approved successfully' });
+        } else if (action === 'reject') {
+            // Update bank transfer status
+            await prisma.bankTransfer.update({
+                where: { id: paymentId },
+                data: { status: 'rejected' }
+            });
+
+            // Send rejection email (you can implement this)
+            // await sendRejectionEmail(bankTransfer.userEmail);
+
+            res.json({ success: true, message: 'Payment rejected successfully' });
+        } else {
+            res.status(400).json({ success: false, message: 'Invalid action' });
+        }
+    } catch (error) {
+        console.error('Approve bank transfer error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//GET PENDING BANK TRANSFERS (Admin only)
+app.get('/api/pending-banktransfers', async (req, res) => {
+    try {
+        const pendingTransfers = await prisma.bankTransfer.findMany({
+            where: { status: 'pending' },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json({ success: true, transfers: pendingTransfers });
+    } catch (error) {
+        console.error('Get pending transfers error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });

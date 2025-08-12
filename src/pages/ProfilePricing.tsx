@@ -80,7 +80,7 @@ const ProfilePricing = () => {
   };
 
   return (
-    <div className="container max-w-6xl mx-auto py-8">
+    <div className="w-full px-2 py-8">
       <div className="text-center mb-10">
         <h1 className="text-3xl font-bold tracking-tight">Choose Your Plan</h1>
         <p className="mt-3 text-muted-foreground">

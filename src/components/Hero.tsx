@@ -1,13 +1,34 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../res/screenshot.png';
+import LoginDialog from './LoginDialog';
+import SignupDialog from './SignupDialog';
 
 const Hero = () => {
   const textRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isSignupOpen, setIsSignupOpen] = useState(false);
+
+  // Check if user is logged in
+  useEffect(() => {
+    const auth = sessionStorage.getItem('auth');
+    if (auth === 'true') {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  const handleStartCreating = () => {
+    if (isLoggedIn) {
+      navigate("/dashboard");
+    } else {
+      setIsSignupOpen(true);
+    }
+  };
 
   useEffect(() => {
     const observerOptions = {
@@ -63,7 +84,7 @@ const Hero = () => {
           </p>
 
           <div className="animate-on-scroll opacity-0 flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Button onClick={() => navigate("/dashboard")} size="lg" className="w-full sm:w-auto font-medium">
+            <Button onClick={handleStartCreating} size="lg" className="w-full sm:w-auto font-medium">
               Start Creating Now
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -84,6 +105,28 @@ const Hero = () => {
         <div className="absolute top-1/4 -left-20 w-40 h-40 bg-primary/5 rounded-full filter blur-3xl"></div>
         <div className="absolute bottom-1/4 -right-20 w-60 h-60 bg-primary/10 rounded-full filter blur-3xl"></div>
       </div>
+
+      {/* Login/Signup Dialogs */}
+      <LoginDialog 
+        open={isLoginOpen} 
+        onOpenChange={setIsLoginOpen}
+        onSwitchToSignup={() => {
+          setIsLoginOpen(false);
+          setIsSignupOpen(true);
+        }}
+      >
+        <div></div>
+      </LoginDialog>
+      <SignupDialog 
+        open={isSignupOpen} 
+        onOpenChange={setIsSignupOpen}
+        onSwitchToLogin={() => {
+          setIsSignupOpen(false);
+          setIsLoginOpen(true);
+        }}
+      >
+        <div></div>
+      </SignupDialog>
     </section>
   );
 };

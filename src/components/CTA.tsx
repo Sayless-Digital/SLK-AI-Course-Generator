@@ -1,12 +1,34 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { appName } from '@/constants';
 import { useNavigate } from 'react-router-dom';
+import LoginDialog from './LoginDialog';
+import SignupDialog from './SignupDialog';
 
 const CTA = () => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isSignupOpen, setIsSignupOpen] = useState(false);
+
+  // Check if user is logged in
+  useEffect(() => {
+    const auth = sessionStorage.getItem('auth');
+    if (auth === 'true') {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  const handleStartCreating = () => {
+    if (isLoggedIn) {
+      navigate("/dashboard");
+    } else {
+      setIsSignupOpen(true);
+    }
+  };
+
   useEffect(() => {
     const observerOptions = {
       root: null,
@@ -49,7 +71,7 @@ const CTA = () => {
               Join thousands of educators, trainers, and content creators who are saving time and creating better learning experiences with {appName}.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button onClick={() => navigate("/dashboard")} size="lg" className="font-medium">
+              <Button onClick={handleStartCreating} size="lg" className="font-medium">
                 Start Creating Now
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -57,6 +79,28 @@ const CTA = () => {
           </div>
         </div>
       </div>
+
+      {/* Login/Signup Dialogs */}
+      <LoginDialog 
+        open={isLoginOpen} 
+        onOpenChange={setIsLoginOpen}
+        onSwitchToSignup={() => {
+          setIsLoginOpen(false);
+          setIsSignupOpen(true);
+        }}
+      >
+        <div></div>
+      </LoginDialog>
+      <SignupDialog 
+        open={isSignupOpen} 
+        onOpenChange={setIsSignupOpen}
+        onSwitchToLogin={() => {
+          setIsSignupOpen(false);
+          setIsLoginOpen(true);
+        }}
+      >
+        <div></div>
+      </SignupDialog>
     </section >
   );
 };

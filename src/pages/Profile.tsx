@@ -127,10 +127,6 @@ const Profile = () => {
     try {
       const response = await axios.post(postURL, { email: formData.email, mName: formData.name, password: formData.password, uid });
       if (response.data.success) {
-        toast({
-          title: "Profile updated",
-          description: "Your profile information has been updated successfully."
-        });
         sessionStorage.setItem('email', formData.email);
         sessionStorage.setItem('mName', formData.name);
         setProcessing(false);
@@ -261,9 +257,9 @@ const Profile = () => {
   }
 
   return (
-    <div className="container max-w-4xl mx-auto py-6">
+    <div className="w-full min-h-full">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">My Profile</h1>
+        <h1 className="text-3xl font-bold leading-none">My Profile</h1>
         <Button
           variant={isEditing ? "default" : "outline"}
           disabled={processing}
@@ -290,209 +286,206 @@ const Profile = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Profile Summary Card */}
-        <Card className="md:col-span-1">
-          <CardHeader className="text-center">
-            <CardTitle>{formData.name}</CardTitle>
-            <CardDescription>{formData.email}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-
-
-              <Separator />
-
-              <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-2">Account Status</h3>
-                {sessionStorage.getItem('type') !== 'free' ?
-                  <div className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-xs rounded px-2 py-1 inline-flex items-center">
-                    <ShieldCheck className="h-3 w-3 mr-1" />
-                    Active Paid Plan
-                  </div>
-                  :
-                  <div className="bg-gray-200 dark:gray-700 text-black dark:text-black text-xs rounded px-2 py-1 inline-flex items-center">
-                    <ShieldCheck className="h-3 w-3 mr-1" />
-                    Active Free Plan
-                  </div>
-                }
+      <div className="space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          {/* Profile Summary Card */}
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle>{formData.name}</CardTitle>
+              <CardDescription>{formData.email}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 text-center">
+                <Separator />
+                <div>
+                  <h3 className="font-medium text-sm text-muted-foreground mb-2">Account Status</h3>
+                  {sessionStorage.getItem('type') !== 'free' ?
+                    <div className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-xs rounded px-2 py-1 inline-flex items-center justify-center">
+                      <ShieldCheck className="h-3 w-3 mr-1" />
+                      Active Paid Plan
+                    </div>
+                    :
+                    <div className="bg-gray-200 dark:gray-700 text-black dark:text-black text-xs rounded px-2 py-1 inline-flex items-center justify-center">
+                      <ShieldCheck className="h-3 w-3 mr-1" />
+                      Active Free Plan
+                    </div>
+                  }
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Tabs for Settings */}
-        <Card className="md:col-span-2">
-          <CardContent className="p-0">
-            <Tabs defaultValue="account" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="account">Account</TabsTrigger>
-                <TabsTrigger value="notifications">Settings</TabsTrigger>
-                <TabsTrigger onClick={() => getDetails()} value="billing">Billing</TabsTrigger>
-              </TabsList>
+          {/* Billing */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Subscription Plan</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {sessionStorage.getItem('type') !== 'free' ?
+                  <>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base font-medium">{plan}</CardTitle>
+                        <CardDescription>${cost}/{plan === MonthType ? 'month' : 'year'}</CardDescription>
+                      </CardHeader>
+                      <CardFooter className="flex justify-between">
+                        <Dialog>
+                          <DialogTrigger><Button variant="outline" size="sm">Cancel Plan</Button></DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Are you sure you want to cancel your plan?</DialogTitle>
+                              <DialogDescription>
+                                This action is irreversible. Your premium plan will be canceled immediately,
+                                and no refunds will be issued for any remaining days.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="w-40"
+                                >
+                                  No
+                                </Button>
+                              </DialogTrigger>
+                              <Button onClick={cancelSubscription} className='bg-red-500 hover:bg-red-600 w-40'>{processingCancel ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <></>}{processingCancel ? 'Canceling...' : 'Cancel Plan'}</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </CardFooter>
+                    </Card>
 
-              <TabsContent value="account" className="p-6">
-                <form onSubmit={handleSubmit}>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input
-                          id="name"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                        />
+                    <div className="pt-4">
+                      <h3 className="text-lg font-medium mb-2">Payment Methods</h3>
+
+                      <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
+                        <div className="flex items-center">
+                          <CreditCard className="h-8 w-8 mr-4 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{method.toUpperCase()}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
+                  </>
+                  :
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base font-medium">Free Plan</CardTitle>
+                      <CardDescription>$0</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm">This plan is completely free, <strong>for lifetime.</strong></p>
+                    </CardContent>
+                    <CardFooter className="flex justify-between">
+                      <Button onClick={redirectPricing} size="sm">Change Plan</Button>
+                    </CardFooter>
+                  </Card>
+                }
+              </div>
+            </CardContent>
+          </Card>
 
+          {/* Account Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Settings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email">New Password</Label>
+                      <Label htmlFor="name">Full Name</Label>
                       <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        value={formData.password}
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
                         onChange={handleChange}
                         disabled={!isEditing}
                       />
                     </div>
                   </div>
-                </form>
-              </TabsContent>
 
-              <TabsContent value="notifications" className="p-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Settings</h3>
-
-                  <div className="space-y-4">
-                    {installPrompt && (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="course-updates">Desktop App</Label>
-                            <p className="text-sm text-muted-foreground">Download the desktop application for Windows and Mac</p>
-                          </div>
-                          <Button onClick={handleInstallClick}><DownloadIcon /> Download</Button>
-                        </div>
-                        <Separator />
-                      </>
-                    )
-                    }
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="marketing">Delete Profile</Label>
-                        <p className="text-sm text-muted-foreground">Permanently remove profile and all associated data</p>
-                      </div>
-                      <Dialog>
-                        <DialogTrigger><Button className='bg-red-500 hover:bg-red-600'><TrashIcon /> Delete</Button></DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Are you sure you want to delete your profile?</DialogTitle>
-                            <DialogDescription>
-                              This action cannot be undone. This will permanently delete your account
-                              and remove your data.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className="w-40"
-                              >
-                                No
-                              </Button>
-                            </DialogTrigger>
-                            <Button onClick={deleteProfile} className='bg-red-500 hover:bg-red-600 w-40'>{processingDelete ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <></>}{processingDelete ? 'Deleting...' : 'Delete'}</Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-
+                  <div className="space-y-2">
+                    <Label htmlFor="password">New Password</Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                    />
                   </div>
                 </div>
-              </TabsContent>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
 
-              <TabsContent value="billing" className="p-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Subscription Plan</h3>
-                  {sessionStorage.getItem('type') !== 'free' ?
-                    <>
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-base font-medium">{plan}</CardTitle>
-                          <CardDescription>${cost}/{plan === MonthType ? 'month' : 'year'}</CardDescription>
-                        </CardHeader>
-                        <CardFooter className="flex justify-between">
-                          <Dialog>
-                            <DialogTrigger><Button variant="outline" size="sm">Cancel Plan</Button></DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Are you sure you want to cancel your plan?</DialogTitle>
-                                <DialogDescription>
-                                  This action is irreversible. Your premium plan will be canceled immediately,
-                                  and no refunds will be issued for any remaining days.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <DialogFooter>
-                                <DialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    className="w-40"
-                                  >
-                                    No
-                                  </Button>
-                                </DialogTrigger>
-                                <Button onClick={cancelSubscription} className='bg-red-500 hover:bg-red-600 w-40'>{processingCancel ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <></>}{processingCancel ? 'Canceling...' : 'Cancel Plan'}</Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        </CardFooter>
-                      </Card>
+        {/* Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Settings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {installPrompt && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="course-updates">Desktop App</Label>
+                      <p className="text-sm text-muted-foreground">Download the desktop application for Windows and Mac</p>
+                    </div>
+                    <Button onClick={handleInstallClick}><DownloadIcon /> Download</Button>
+                  </div>
+                  <Separator />
+                </>
+              )}
 
-                      <div className="pt-4">
-                        <h3 className="text-lg font-medium mb-2">Payment Methods</h3>
-
-                        <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
-                          <div className="flex items-center">
-                            <CreditCard className="h-8 w-8 mr-4 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium">{method.toUpperCase()}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                    :
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base font-medium">Free Plan</CardTitle>
-                        <CardDescription>$0</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm">This plan is completely free, <strong>for lifetime.</strong></p>
-                      </CardContent>
-                      <CardFooter className="flex justify-between">
-                        <Button onClick={redirectPricing} size="sm">Change Plan</Button>
-                      </CardFooter>
-                    </Card>
-                  }
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="marketing">Delete Profile</Label>
+                  <p className="text-sm text-muted-foreground">Permanently remove profile and all associated data</p>
                 </div>
-              </TabsContent>
-            </Tabs>
+                <Dialog>
+                  <DialogTrigger><Button className='bg-red-500 hover:bg-red-600'><TrashIcon /> Delete</Button></DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Are you sure you want to delete your profile?</DialogTitle>
+                      <DialogDescription>
+                        This action cannot be undone. This will permanently delete your account
+                        and remove your data.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-40"
+                        >
+                          No
+                        </Button>
+                      </DialogTrigger>
+                      <Button onClick={deleteProfile} className='bg-red-500 hover:bg-red-600 w-40'>{processingDelete ? <Loader className="animate-spin mr-2 h-4 w-4" /> : <></>}{processingDelete ? 'Deleting...' : 'Delete'}</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

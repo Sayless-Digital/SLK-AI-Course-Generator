@@ -257,7 +257,7 @@ const SignupDialog = ({ children, triggerClassName, onSwitchToLogin, open, onOpe
             <div>
               <Input
                 id={`${id}-name`}
-                placeholder="Full name"
+                placeholder="Marcus Mohammed"
                 type="text"
                 required
                 value={name}

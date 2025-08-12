@@ -148,3 +148,24 @@ model Blog {
 
   @@map("blogs")
 }
+
+model BankTransfer {
+  id          String   @id @default(cuid())
+  userId      String
+  userEmail   String
+  userName    String
+  planId      String
+  planName    String
+  planPrice   Float
+  receiptPath String
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  country     String
+  status      String   @default("pending") // pending, approved, rejected
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("bank_transfers")
+}
