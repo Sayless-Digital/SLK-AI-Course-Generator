@@ -13,6 +13,12 @@ import {
   SidebarTrigger
 } from '@/components/ui/sidebar';
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -37,6 +43,7 @@ import {
   FileEdit,
   FileSliders,
   Banknote,
+  Settings,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -105,7 +112,7 @@ const AdminLayout = () => {
       <div className="flex min-h-screen w-full bg-gradient-to-br from-background to-muted/20">
         {/* Desktop Sidebar */}
         {!isMobile && (
-        <Sidebar className="border-r border-border/40">
+        <Sidebar className="border-r border-border/40 p-2">
           <SidebarHeader className="border-b border-border/40 h-12">
             <Link to="/admin" className="flex items-center space-x-2 px-2 h-full">
               <div className="h-8 w-8 rounded-md bg-primary from-primary flex items-center justify-center">
@@ -127,12 +134,55 @@ const AdminLayout = () => {
               </SidebarMenuItem>
 
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Users" isActive={isActive('/admin/users')}>
-                  <Link to="/admin/users" className={cn(isActive('/admin/users') && "text-primary")}>
-                    <Users />
-                    <span>Users</span>
-                  </Link>
-                </SidebarMenuButton>
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="users" className="border-none">
+                    <AccordionTrigger className="py-2 px-2 hover:bg-accent/50 rounded-md data-[state=open]:bg-accent/50">
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4" />
+                        <span className="text-sm">Users</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-1">
+                      <div className="space-y-1 pl-6">
+                        <Link 
+                          to="/admin/users" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/users') && "bg-accent text-primary"
+                          )}
+                        >
+                          <Users className="h-3 w-3" />
+                          <span>All Users</span>
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/paid-users" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/paid-users') && "bg-accent text-primary"
+                          )}
+                        >
+                          <DollarSign className="h-3 w-3" />
+                          <span>Paid Users</span>
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/admins" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/admins') && "bg-accent text-primary"
+                          )}
+                        >
+                          <UserCog className="h-3 w-3" />
+                          <span>Admins</span>
+                        </Link>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
@@ -140,24 +190,6 @@ const AdminLayout = () => {
                   <Link to="/admin/courses" className={cn(isActive('/admin/courses') && "text-primary")}>
                     <BookOpen />
                     <span>Courses</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Paid Users" isActive={isActive('/admin/paid-users')}>
-                  <Link to="/admin/paid-users" className={cn(isActive('/admin/paid-users') && "text-primary")}>
-                    <DollarSign />
-                    <span>Paid Users</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Admins" isActive={isActive('/admin/admins')}>
-                  <Link to="/admin/admins" className={cn(isActive('/admin/admins') && "text-primary")}>
-                    <UserCog />
-                    <span>Admins</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -172,66 +204,119 @@ const AdminLayout = () => {
               </SidebarMenuItem>
 
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Blogs" isActive={isActive('/admin/blogs')}>
-                  <Link to="/admin/blogs" className={cn(isActive('/admin/blogs') && "text-primary")}>
-                    <FileSliders />
-                    <span>Manage Blogs</span>
-                  </Link>
-                </SidebarMenuButton>
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="blogs" className="border-none">
+                    <AccordionTrigger className="py-2 px-2 hover:bg-accent/50 rounded-md data-[state=open]:bg-accent/50">
+                      <div className="flex items-center space-x-2">
+                        <FileSliders className="h-4 w-4" />
+                        <span className="text-sm">Blogs</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-1">
+                      <div className="space-y-1 pl-6">
+                        <Link 
+                          to="/admin/blogs" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/blogs') && "bg-accent text-primary"
+                          )}
+                        >
+                          <FileSliders className="h-3 w-3" />
+                          <span>Manage Blogs</span>
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/create-blog" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/create-blog') && "bg-accent text-primary"
+                          )}
+                        >
+                          <FileEdit className="h-3 w-3" />
+                          <span>Create Blog</span>
+                        </Link>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Create Blog" isActive={isActive('/admin/create-blog')}>
-                  <Link to="/admin/create-blog" className={cn(isActive('/admin/create-blog') && "text-primary")}>
-                    <FileEdit />
-                    <span>Create Blog</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Terms" isActive={isActive('/admin/terms')}>
-                  <Link to="/admin/terms" className={cn(isActive('/admin/terms') && "text-primary")}>
-                    <FileText />
-                    <span>Terms</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Privacy" isActive={isActive('/admin/privacy')}>
-                  <Link to="/admin/privacy" className={cn(isActive('/admin/privacy') && "text-primary")}>
-                    <Shield />
-                    <span>Privacy</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Cancellation" isActive={isActive('/admin/cancellation')}>
-                  <Link to="/admin/cancellation" className={cn(isActive('/admin/cancellation') && "text-primary")}>
-                    <X />
-                    <span>Cancellation</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Refund" isActive={isActive('/admin/refund')}>
-                  <Link to="/admin/refund" className={cn(isActive('/admin/refund') && "text-primary")}>
-                    <ArrowLeft />
-                    <span>Refund</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Subscription & Billing" isActive={isActive('/admin/subscription-billing')}>
-                  <Link to="/admin/subscription-billing" className={cn(isActive('/admin/subscription-billing') && "text-primary")}>
-                    <CreditCard />
-                    <span>Subscription & Billing</span>
-                  </Link>
-                </SidebarMenuButton>
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="policies" className="border-none">
+                    <AccordionTrigger className="py-2 px-2 hover:bg-accent/50 rounded-md data-[state=open]:bg-accent/50">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="h-4 w-4" />
+                        <span className="text-sm">Policies</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-1">
+                      <div className="space-y-1 pl-6">
+                        <Link 
+                          to="/admin/terms" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/terms') && "bg-accent text-primary"
+                          )}
+                        >
+                          <FileText className="h-3 w-3" />
+                          <span>Terms</span>
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/privacy" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/privacy') && "bg-accent text-primary"
+                          )}
+                        >
+                          <Shield className="h-3 w-3" />
+                          <span>Privacy</span>
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/cancellation" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/cancellation') && "bg-accent text-primary"
+                          )}
+                        >
+                          <X className="h-3 w-3" />
+                          <span>Cancellation</span>
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/refund" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/refund') && "bg-accent text-primary"
+                          )}
+                        >
+                          <ArrowLeft className="h-3 w-3" />
+                          <span>Refund</span>
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/subscription-billing" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/subscription-billing') && "bg-accent text-primary"
+                          )}
+                        >
+                          <CreditCard className="h-3 w-3" />
+                          <span>Subscription & Billing</span>
+                        </Link>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
@@ -241,6 +326,46 @@ const AdminLayout = () => {
                     <span>Bank Transfers</span>
                   </Link>
                 </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="settings" className="border-none">
+                    <AccordionTrigger className="py-2 px-2 hover:bg-accent/50 rounded-md data-[state=open]:bg-accent/50">
+                      <div className="flex items-center space-x-2">
+                        <Settings className="h-4 w-4" />
+                        <span className="text-sm">Settings</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-1">
+                      <div className="space-y-1 pl-6">
+                        <Link 
+                          to="/admin/settings/plans" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/settings/plans') && "bg-accent text-primary"
+                          )}
+                        >
+                          <DollarSign className="h-3 w-3" />
+                          <span>Plan Pricing</span>
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/settings/general" 
+                          className={cn(
+                            "flex items-center space-x-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                            "hover:bg-accent/50 hover:text-primary",
+                            isActive('/admin/settings/general') && "bg-accent text-primary"
+                          )}
+                        >
+                          <Settings className="h-3 w-3" />
+                          <span>General Settings</span>
+                        </Link>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>

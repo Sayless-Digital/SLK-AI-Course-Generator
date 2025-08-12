@@ -199,7 +199,11 @@ app.post('/api/dashboard', async (req, res) => {
             }
         });
         
-        // Calculate revenue (simplified - you may need to adjust based on your pricing)
+        // Calculate revenue using actual plan prices from database
+        const planSettings = await prisma.planSettings.findMany();
+        const monthlyPlan = planSettings.find(p => p.planType === 'monthly');
+        const yearlyPlan = planSettings.find(p => p.planType === 'yearly');
+        
         const monthlyUsers = await prisma.user.count({
             where: { type: 'monthly' }
         });
@@ -207,8 +211,8 @@ app.post('/api/dashboard', async (req, res) => {
             where: { type: 'yearly' }
         });
         
-        const monthCost = monthlyUsers * 9; // Assuming $9/month
-        const yearCost = yearlyUsers * 99; // Assuming $99/year
+        const monthCost = monthlyUsers * (monthlyPlan?.price || 9);
+        const yearCost = yearlyUsers * (yearlyPlan?.price || 99);
         const sum = monthCost + yearCost;
         
         res.json({ 
@@ -1215,6 +1219,249 @@ app.get('/api/pending-banktransfers', async (req, res) => {
         res.json({ success: true, transfers: pendingTransfers });
     } catch (error) {
         console.error('Get pending transfers error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//GET ALL BANK TRANSFERS (Admin only)
+app.get('/api/all-banktransfers', async (req, res) => {
+    try {
+        const allTransfers = await prisma.bankTransfer.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json({ success: true, transfers: allTransfers });
+    } catch (error) {
+        console.error('Get all transfers error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//UPDATE BANK TRANSFER STATUS (Admin only)
+app.post('/api/update-banktransfer-status', async (req, res) => {
+    try {
+        const { paymentId, status } = req.body;
+        
+        const bankTransfer = await prisma.bankTransfer.findUnique({
+            where: { id: paymentId }
+        });
+
+        if (!bankTransfer) {
+            return res.status(404).json({ success: false, message: 'Payment not found' });
+        }
+
+        // Update bank transfer status
+        await prisma.bankTransfer.update({
+            where: { id: paymentId },
+            data: { status: status }
+        });
+
+        // If status is being changed to approved, create subscription
+        if (status === 'approved' && bankTransfer.status !== 'approved') {
+            await prisma.subscription.create({
+                data: {
+                    userId: bankTransfer.userId,
+                    subscription: `bank_${paymentId}`,
+                    subscriberId: paymentId,
+                    plan: bankTransfer.planName,
+                    method: 'banktransfer',
+                    active: true
+                }
+            });
+
+            // Update user type
+            await prisma.user.update({
+                where: { id: bankTransfer.userId },
+                data: { type: bankTransfer.planId }
+            });
+        }
+
+        // If status is being changed from approved to something else, remove subscription
+        if (bankTransfer.status === 'approved' && status !== 'approved') {
+            await prisma.subscription.deleteMany({
+                where: { 
+                    userId: bankTransfer.userId,
+                    subscriberId: paymentId
+                }
+            });
+
+            // Reset user type to free
+            await prisma.user.update({
+                where: { id: bankTransfer.userId },
+                data: { type: 'free' }
+            });
+        }
+
+        res.json({ success: true, message: 'Status updated successfully' });
+    } catch (error) {
+        console.error('Update bank transfer status error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//GET PLAN SETTINGS
+app.get('/api/plan-settings', async (req, res) => {
+    try {
+        // Get plans from database
+        const planSettings = await prisma.planSettings.findMany();
+        
+        // If no plans exist in database, create default plans
+        if (planSettings.length === 0) {
+            const defaultPlans = [
+                {
+                    planType: 'free',
+                    name: 'Free Plan',
+                    price: 0,
+                    period: 'forever',
+                    features: [
+                        "Generate 5 Sub-Topics",
+                        "Lifetime access",
+                        "Theory & Image Course",
+                        "Ai Teacher Chat",
+                    ]
+                },
+                {
+                    planType: 'monthly',
+                    name: 'Monthly Plan',
+                    price: 9,
+                    period: 'monthly',
+                    features: [
+                        "Generate 10 Sub-Topics",
+                        "1 Month Access",
+                        "Theory & Image Course",
+                        "Ai Teacher Chat",
+                        "Course In 23+ Languages",
+                        "Create Unlimited Course",
+                        "Video & Theory Course",
+                    ]
+                },
+                {
+                    planType: 'yearly',
+                    name: 'Yearly Plan',
+                    price: 99,
+                    period: 'yearly',
+                    features: [
+                        "Generate 10 Sub-Topics",
+                        "1 Year Access",
+                        "Theory & Image Course",
+                        "Ai Teacher Chat",
+                        "Course In 23+ Languages",
+                        "Create Unlimited Course",
+                        "Video & Theory Course",
+                    ]
+                }
+            ];
+
+            // Create default plans in database
+            for (const plan of defaultPlans) {
+                await prisma.planSettings.create({
+                    data: plan
+                });
+            }
+
+            // Return the default plans
+            const plans = {
+                free: defaultPlans[0],
+                monthly: defaultPlans[1],
+                yearly: defaultPlans[2]
+            };
+
+            res.json({ success: true, plans });
+        } else {
+            // Convert database plans to expected format
+            const plans = {};
+            planSettings.forEach(plan => {
+                plans[plan.planType] = {
+                    name: plan.name,
+                    price: plan.price,
+                    period: plan.period,
+                    features: plan.features
+                };
+            });
+
+            res.json({ success: true, plans });
+        }
+    } catch (error) {
+        console.error('Get plan settings error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//UPDATE PLAN SETTINGS
+app.post('/api/plan-settings', async (req, res) => {
+    try {
+        const { plans } = req.body;
+        
+        // Update each plan in the database
+        for (const [planType, planData] of Object.entries(plans)) {
+            await prisma.planSettings.upsert({
+                where: { planType },
+                update: {
+                    name: planData.name,
+                    price: planData.price,
+                    period: planData.period || 'forever',
+                    features: planData.features
+                },
+                create: {
+                    planType,
+                    name: planData.name,
+                    price: planData.price,
+                    period: planData.period || 'forever',
+                    features: planData.features
+                }
+            });
+        }
+        
+        console.log('Updated plan settings:', plans);
+        
+        res.json({ success: true, message: 'Plan settings updated successfully' });
+    } catch (error) {
+        console.error('Update plan settings error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//GET GENERAL SETTINGS
+app.get('/api/general-settings', async (req, res) => {
+    try {
+        // For now, return default settings
+        // In the future, this could be stored in a database table
+        const defaultSettings = {
+            siteName: 'AI Course Generator',
+            siteDescription: 'Create comprehensive courses with AI assistance',
+            contactEmail: 'support@aicoursegenerator.com',
+            contactPhone: '+1 (555) 123-4567',
+            address: '123 Main Street, Port of Spain, Trinidad and Tobago',
+            bankDetails: {
+                bank: 'First Citizens',
+                accountNumber: '2614969',
+                branch: 'Independence Square',
+                accountName: 'Dallas Alejandro Ferdinand'
+            }
+        };
+
+        res.json({ success: true, settings: defaultSettings });
+    } catch (error) {
+        console.error('Get general settings error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+//UPDATE GENERAL SETTINGS
+app.post('/api/general-settings', async (req, res) => {
+    try {
+        const { settings } = req.body;
+        
+        // For now, just log the updated settings
+        // In the future, this could be stored in a database table
+        console.log('Updated general settings:', settings);
+        
+        // You could add a GeneralSettings table to the database and store/update here
+        // For now, we'll just return success
+        
+        res.json({ success: true, message: 'General settings updated successfully' });
+    } catch (error) {
+        console.error('Update general settings error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });

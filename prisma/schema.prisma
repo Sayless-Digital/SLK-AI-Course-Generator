@@ -46,6 +46,19 @@ model Admin {
   @@map("admins")
 }
 
+model PlanSettings {
+  id        String   @id @default(cuid())
+  planType  String   @unique // free, monthly, yearly
+  name      String
+  price     Float
+  period    String   @default("forever") // forever, monthly, yearly, custom
+  features  String[] // Array of features
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("plan_settings")
+}
+
 model Course {
   id        String   @id @default(cuid())
   content   String

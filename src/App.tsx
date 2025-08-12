@@ -47,6 +47,8 @@ import QuizPage from "./pages/QuizPage";
 import BlogPost from "./pages/BlogPost";
 import AdminBlogs from "./pages/admin/AdminBlogs";
 import AdminBankTransfers from "./pages/admin/AdminBankTransfers";
+import AdminPlanSettings from "./pages/admin/AdminPlanSettings";
+import AdminGeneralSettings from "./pages/admin/AdminGeneralSettings";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { googleClientId } from "./constants";
 
@@ -127,6 +129,8 @@ const App = () => (
                   <Route path="create-blog" element={<AdminCreateBlog />} />
                   <Route path="blogs" element={<AdminBlogs />} />
                   <Route path="bank-transfers" element={<AdminBankTransfers />} />
+                  <Route path="settings/plans" element={<AdminPlanSettings />} />
+                  <Route path="settings/general" element={<AdminGeneralSettings />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

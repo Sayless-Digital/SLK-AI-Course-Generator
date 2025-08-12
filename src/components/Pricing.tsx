@@ -3,63 +3,117 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
-import { FreeCost, FreeType, MonthCost, MonthType, YearCost, YearType } from '@/constants';
 import { useNavigate } from 'react-router-dom';
-
-const plans = [
-  {
-    name: FreeType,
-    description: "",
-    price: FreeCost,
-    features: [
-      "Generate 5 Sub-Topics",
-      "Lifetime access",
-      "Theory & Image Course",
-      "Ai Teacher Chat",
-    ],
-    featured: false,
-    cta: "Get Started",
-    billing: "forever"
-  },
-  {
-    name: MonthType,
-    description: "",
-    price: MonthCost,
-    features: [
-      "Generate 10 Sub-Topics",
-      "1 Month Access",
-      "Theory & Image Course",
-      "Ai Teacher Chat",
-      "Course In 23+ Languages",
-      "Create Unlimited Course",
-      "Video & Theory Course",
-    ],
-    featured: true,
-    cta: "Get Started",
-    billing: "monthly"
-  },
-  {
-    name: YearType,
-    description: "",
-    price: YearCost,
-    features: [
-      "Generate 10 Sub-Topics",
-      "1 Year Access",
-      "Theory & Image Course",
-      "Ai Teacher Chat",
-      "Course In 23+ Languages",
-      "Create Unlimited Course",
-      "Video & Theory Course",
-    ],
-    featured: false,
-    cta: "Get Started",
-    billing: "yearly"
-  }
-];
+import { serverURL } from '@/constants';
+import axios from 'axios';
 
 const Pricing = () => {
   const pricingRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPlanSettings();
+  }, []);
+
+  const fetchPlanSettings = async () => {
+    try {
+      const response = await axios.get(`${serverURL}/api/plan-settings`);
+      if (response.data.success) {
+        const apiPlans = response.data.plans;
+        
+        // Convert API plans to component format
+        const convertedPlans = [
+          {
+            name: apiPlans.free.name,
+            description: "",
+            price: apiPlans.free.price,
+            features: apiPlans.free.features,
+            featured: false,
+            cta: "Get Started",
+            billing: apiPlans.free.period || "forever"
+          },
+          {
+            name: apiPlans.monthly.name,
+            description: "",
+            price: apiPlans.monthly.price,
+            features: apiPlans.monthly.features,
+            featured: true,
+            cta: "Get Started",
+            billing: apiPlans.monthly.period || "monthly"
+          },
+          {
+            name: apiPlans.yearly.name,
+            description: "",
+            price: apiPlans.yearly.price,
+            features: apiPlans.yearly.features,
+            featured: false,
+            cta: "Get Started",
+            billing: apiPlans.yearly.period || "yearly"
+          }
+        ];
+        
+        setPlans(convertedPlans);
+      }
+    } catch (error) {
+      console.error('Error fetching plan settings:', error);
+      // Fallback to default plans if API fails
+      setPlans([
+        {
+          name: 'Free Plan',
+          description: "",
+          price: 0,
+          features: [
+            "Generate 5 Sub-Topics",
+            "Lifetime access",
+            "Theory & Image Course",
+            "Ai Teacher Chat",
+          ],
+          featured: false,
+          cta: "Get Started",
+          billing: "forever"
+        },
+        {
+          name: 'Monthly Plan',
+          description: "",
+          price: 9,
+          features: [
+            "Generate 10 Sub-Topics",
+            "1 Month Access",
+            "Theory & Image Course",
+            "Ai Teacher Chat",
+            "Course In 23+ Languages",
+            "Create Unlimited Course",
+            "Video & Theory Course",
+          ],
+          featured: true,
+          cta: "Get Started",
+          billing: "monthly"
+        },
+        {
+          name: 'Yearly Plan',
+          description: "",
+          price: 99,
+          features: [
+            "Generate 10 Sub-Topics",
+            "1 Year Access",
+            "Theory & Image Course",
+            "Ai Teacher Chat",
+            "Course In 23+ Languages",
+            "Create Unlimited Course",
+            "Video & Theory Course",
+          ],
+          featured: false,
+          cta: "Get Started",
+          billing: "yearly"
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const observerOptions = {
       root: null,
@@ -102,6 +156,31 @@ const Pricing = () => {
   const getAdjustedPrice = (basePrice: number) => {
     return basePrice;
   };
+
+  if (loading) {
+    return (
+      <section id="pricing" className="py-20 md:py-32 px-6 md:px-10 relative">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-8">
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary mb-4">
+              Pricing
+            </span>
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold">
+              Simple, <span className="text-primary">Transparent</span> Pricing
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-card rounded-xl p-8 animate-pulse">
+                <div className="h-4 bg-muted rounded w-1/4 mb-2"></div>
+                <div className="h-3 bg-muted rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="pricing" className="py-20 md:py-32 px-6 md:px-10 relative">
@@ -148,8 +227,21 @@ const Pricing = () => {
                 <p className="text-muted-foreground mt-2 mb-6">{plan.description}</p>
 
                 <div className="mb-6">
-                  <span className="font-display text-4xl font-bold">${getAdjustedPrice(plan.price)}</span>
-                  <span className="text-muted-foreground ml-2">{plan.billing === 'monthly' ? '/mo' : plan.billing === 'yearly' ? '/yr' : ''}</span>
+                  {plan.price === 0 ? (
+                    <span className="font-display text-4xl font-bold text-green-600">Free</span>
+                  ) : (
+                    <>
+                      <span className="font-display text-4xl font-bold">${getAdjustedPrice(plan.price)}</span>
+                      <span className="text-muted-foreground ml-2">
+                        {plan.billing === 'monthly' ? '/mo' : 
+                         plan.billing === 'yearly' ? '/yr' : 
+                         plan.billing === 'weekly' ? '/wk' : 
+                         plan.billing === 'daily' ? '/day' : 
+                         plan.billing === 'forever' ? '' : 
+                         `/${plan.billing}`}
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 <ul className="space-y-3 mb-8">
