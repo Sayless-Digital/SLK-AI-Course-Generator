@@ -25,24 +25,24 @@ npm run dev            # Frontend
 
 ## 📚 Documentation
 
-All documentation is organized in the [`README/`](./README/) folder:
+All documentation is organized in the [`README/`](./README/) folder and uses `.mdc` format for optimal Cursor AI integration:
 
-### **📖 [Main Documentation](./README/MAIN.md)**
+### **📖 [Main Documentation](./README/MAIN.mdc)**
 Complete project overview, setup instructions, and API documentation.
 
-### **🔄 [Prisma Migration Guide](./README/PRISMA-MIGRATION.md)**
+### **🔄 [Prisma Migration Guide](./README/PRISMA-MIGRATION.mdc)**
 Detailed guide for the MongoDB to Prisma + PostgreSQL migration.
 
-### **🚀 [Vercel Deployment Guide](./README/VERCEL-DEPLOYMENT.md)**
+### **🚀 [Vercel Deployment Guide](./README/VERCEL-DEPLOYMENT.mdc)**
 Step-by-step instructions for deploying to Vercel.
 
-### **🗄️ [Supabase Deployment Guide](./README/SUPABASE-DEPLOYMENT.md)**
+### **🗄️ [Supabase Deployment Guide](./README/SUPABASE-DEPLOYMENT.mdc)**
 Complete guide for Supabase database setup and configuration.
 
-### **✅ [Deployment Checklist](./README/DEPLOYMENT-CHECKLIST.md)**
+### **✅ [Deployment Checklist](./README/DEPLOYMENT-CHECKLIST.mdc)**
 Quick checklist for successful deployment.
 
-### **🔑 [API Keys Setup](./README/API-KEYS-SETUP.md)**
+### **🔑 [API Keys Setup](./README/API-KEYS-SETUP.mdc)**
 Configuration status and API keys management.
 
 ## 🛠️ Tech Stack
@@ -137,12 +137,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ```
 README/
-├── MAIN.md                    # Complete project documentation
-├── PRISMA-MIGRATION.md        # Database migration guide
-├── VERCEL-DEPLOYMENT.md       # Vercel deployment instructions
-├── SUPABASE-DEPLOYMENT.md     # Supabase setup guide
-├── DEPLOYMENT-CHECKLIST.md    # Deployment checklist
-├── API-KEYS-SETUP.md         # API keys configuration
+├── MAIN.mdc                    # Complete project documentation
+├── PRISMA-MIGRATION.mdc        # Database migration guide
+├── VERCEL-DEPLOYMENT.mdc       # Vercel deployment instructions
+├── SUPABASE-DEPLOYMENT.mdc     # Supabase setup guide
+├── DEPLOYMENT-CHECKLIST.mdc    # Deployment checklist
+├── API-KEYS-SETUP.mdc         # API keys configuration
 └── Documentation/             # Additional documentation files
     └── documentation.html     # HTML documentation
 ``` 
