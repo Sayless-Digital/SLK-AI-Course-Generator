@@ -2,7 +2,59 @@
 
 A modern, full-stack AI-powered course generation platform built with React, TypeScript, Prisma, and PostgreSQL.
 
-## 🚀 Features
+## 🚀 Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/Sayless-Digital/SLK-AI-Course-Generator.git
+cd SLK-AI-Course-Generator
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+
+# Set up database
+npm run db:push
+
+# Start development servers
+npm run server:prisma  # Backend
+npm run dev            # Frontend
+```
+
+## 📚 Documentation
+
+All documentation is organized in the [`README/`](./README/) folder:
+
+### **📖 [Main Documentation](./README/MAIN.md)**
+Complete project overview, setup instructions, and API documentation.
+
+### **🔄 [Prisma Migration Guide](./README/PRISMA-MIGRATION.md)**
+Detailed guide for the MongoDB to Prisma + PostgreSQL migration.
+
+### **🚀 [Vercel Deployment Guide](./README/VERCEL-DEPLOYMENT.md)**
+Step-by-step instructions for deploying to Vercel.
+
+### **🗄️ [Supabase Deployment Guide](./README/SUPABASE-DEPLOYMENT.md)**
+Complete guide for Supabase database setup and configuration.
+
+### **✅ [Deployment Checklist](./README/DEPLOYMENT-CHECKLIST.md)**
+Quick checklist for successful deployment.
+
+### **🔑 [API Keys Setup](./README/API-KEYS-SETUP.md)**
+Configuration status and API keys management.
+
+## 🛠️ Tech Stack
+
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
+- **Backend**: Node.js, Express.js, Prisma ORM
+- **Database**: PostgreSQL (Supabase)
+- **AI**: Google Gemini AI
+- **Deployment**: Vercel
+- **Payments**: Stripe, Flutterwave
+
+## 🌟 Features
 
 - **AI-Powered Course Generation** - Generate courses using Google's Generative AI
 - **Modern Tech Stack** - React 18, TypeScript, Vite, Tailwind CSS
@@ -13,193 +65,41 @@ A modern, full-stack AI-powered course generation platform built with React, Typ
 - **PWA Support** - Progressive Web App capabilities
 - **Responsive Design** - Mobile-first approach with modern UI
 
-## 🛠️ Tech Stack
-
-### Frontend
-- **React 18** - Modern React with hooks
-- **TypeScript** - Type-safe development
-- **Vite** - Fast build tool and dev server
-- **Tailwind CSS** - Utility-first CSS framework
-- **Radix UI** - Headless UI components
-- **TipTap** - Rich text editor
-- **React Router** - Client-side routing
-
-### Backend
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **Prisma** - Type-safe database ORM
-- **PostgreSQL** - Relational database
-- **Supabase** - Cloud database platform
-
-### AI & Services
-- **Google Generative AI** - Course content generation
-- **Stripe** - Payment processing
-- **Flutterwave** - African payment gateway
-- **Nodemailer** - Email functionality
-
-## 📦 Installation
-
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- Git
-
-### Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Sayless-Digital/SLK-AI-Course-Generator.git
-   cd SLK-AI-Course-Generator
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Update `.env` with your configuration:
-   ```bash
-   # Database
-   DATABASE_URL="your_supabase_connection_string"
-   
-   # AI Services
-   API_KEY="your_google_generative_ai_key"
-   
-   # Email
-   EMAIL="your_email@gmail.com"
-   PASSWORD="your_email_password"
-   
-   # Payment Services
-   STRIPE_SECRET_KEY="your_stripe_key"
-   FLUTTERWAVE_PUBLIC_KEY="your_flutterwave_key"
-   FLUTTERWAVE_SECRET_KEY="your_flutterwave_secret"
-   
-   # External APIs
-   UNSPLASH_ACCESS_KEY="your_unsplash_key"
-   
-   # Server
-   PORT=3001
-   ```
-
-4. **Set up database**
-   ```bash
-   # Push schema to database
-   npm run db:push
-   
-   # Generate Prisma client
-   npm run db:generate
-   ```
-
-5. **Start development servers**
-   ```bash
-   # Start backend server
-   npm run server:prisma
-   
-   # In another terminal, start frontend
-   npm run dev
-   ```
-
 ## 🚀 Available Scripts
 
-### Development
 ```bash
+# Development
 npm run dev              # Start frontend development server
 npm run server:prisma    # Start backend with Prisma
 npm run server           # Start backend with MongoDB (legacy)
-```
 
-### Database Management
-```bash
+# Database Management
 npm run db:push          # Push schema to database
 npm run db:studio        # Open Prisma Studio
 npm run db:generate      # Generate Prisma client
 npm run db:switch-direct # Use direct connection
 npm run db:switch-pooler # Use connection pooler
-```
 
-### Build & Deploy
-```bash
+# Build & Deploy
 npm run build            # Build for production
 npm run preview          # Preview production build
 npm run lint             # Run ESLint
 ```
 
-## 🌐 API Endpoints
+## 🌐 Live Demo
 
-### Authentication
-- `POST /api/signup` - User registration
-- `POST /api/login` - User login
+Once deployed, your application will be available at:
+```
+https://slk-ai-course-generator.vercel.app
+```
 
-### Courses
-- `POST /api/courses` - Create course
-- `GET /api/courses` - Get all courses
-- `GET /api/courses/user/:userId` - Get user's courses
-- `PUT /api/courses/:id` - Update course
-- `DELETE /api/courses/:id` - Delete course
+## 📊 Project Status
 
-### Subscriptions
-- `POST /api/subscriptions` - Create subscription
-- `GET /api/subscriptions` - Get all subscriptions
-
-### Content Management
-- `POST /api/notes` - Create note
-- `GET /api/notes` - Get all notes
-- `POST /api/exams` - Create exam
-- `GET /api/exams` - Get all exams
-- `POST /api/blogs` - Create blog
-- `GET /api/blogs` - Get all blogs
-
-## 🗄️ Database Schema
-
-The application uses a relational database with the following main entities:
-
-- **Users** - User accounts and profiles
-- **Courses** - Course content and metadata
-- **Subscriptions** - Payment subscriptions
-- **Notes** - Course notes
-- **Exams** - Course exams
-- **Blogs** - Blog posts
-- **Contacts** - Contact form submissions
-
-## 🚀 Deployment
-
-### Vercel (Recommended)
-1. Push to GitHub
-2. Connect repository to Vercel
-3. Set environment variables
-4. Deploy automatically
-
-### Railway
-1. Connect GitHub repository
-2. Set environment variables
-3. Deploy automatically
-
-### Render
-1. Connect GitHub repository
-2. Set environment variables
-3. Deploy as web service
-
-See [SUPABASE-DEPLOYMENT.md](./SUPABASE-DEPLOYMENT.md) for detailed deployment instructions.
-
-## 🔧 Configuration
-
-### Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DATABASE_URL` | Supabase PostgreSQL connection string | Yes |
-| `API_KEY` | Google Generative AI API key | Yes |
-| `EMAIL` | Gmail address for notifications | Yes |
-| `PASSWORD` | Gmail app password | Yes |
-| `STRIPE_SECRET_KEY` | Stripe secret key | No |
-| `FLUTTERWAVE_PUBLIC_KEY` | Flutterwave public key | No |
-| `FLUTTERWAVE_SECRET_KEY` | Flutterwave secret key | No |
-| `UNSPLASH_ACCESS_KEY` | Unsplash API key | No |
+- ✅ **Core Functionality**: Complete
+- ✅ **Database**: Prisma + PostgreSQL (Supabase)
+- ✅ **AI Integration**: Google Gemini AI
+- ✅ **Deployment**: Vercel ready
+- ✅ **Documentation**: Comprehensive guides
 
 ## 🤝 Contributing
 
@@ -215,7 +115,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **Documentation**: Check the [docs](./docs) folder
+- **Documentation**: Check the [README/](./README/) folder
 - **Issues**: [GitHub Issues](https://github.com/Sayless-Digital/SLK-AI-Course-Generator/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/Sayless-Digital/SLK-AI-Course-Generator/discussions)
 
@@ -229,4 +129,20 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ by Sayless Digital** 
+**Built with ❤️ by Sayless Digital**
+
+---
+
+## 📁 Documentation Structure
+
+```
+README/
+├── MAIN.md                    # Complete project documentation
+├── PRISMA-MIGRATION.md        # Database migration guide
+├── VERCEL-DEPLOYMENT.md       # Vercel deployment instructions
+├── SUPABASE-DEPLOYMENT.md     # Supabase setup guide
+├── DEPLOYMENT-CHECKLIST.md    # Deployment checklist
+├── API-KEYS-SETUP.md         # API keys configuration
+└── Documentation/             # Additional documentation files
+    └── documentation.html     # HTML documentation
+``` 
