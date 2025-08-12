@@ -42,7 +42,7 @@ In your Vercel project dashboard, go to **Settings** → **Environment Variables
 DATABASE_URL="postgresql://postgres.hpedivtpmdjnwetftiqr:Fs09rn2q1I1xcvUM@aws-0-us-east-2.pooler.supabase.com:6543/postgres"
 
 # AI Services
-API_KEY="your_google_generative_ai_key"
+API_KEY="AIzaSyA--CoLOYzRQqfMenwlKb2qIGsPUZqA_Og"
 
 # Email Configuration
 EMAIL="your_email@gmail.com"
