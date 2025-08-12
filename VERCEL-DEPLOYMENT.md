@@ -1,0 +1,231 @@
+# 🚀 Vercel Deployment Guide for SLK AI Course Generator
+
+This guide will help you deploy your AiCourse project to Vercel with full-stack functionality.
+
+## ✅ **Prerequisites**
+
+- GitHub repository: [https://github.com/Sayless-Digital/SLK-AI-Course-Generator](https://github.com/Sayless-Digital/SLK-AI-Course-Generator)
+- Supabase database configured
+- Vercel account (free tier available)
+
+## 🚀 **Step 1: Connect to Vercel**
+
+### **Option A: Via Vercel Dashboard (Recommended)**
+
+1. **Visit Vercel**: Go to [https://vercel.com](https://vercel.com)
+2. **Sign up/Login**: Create account or sign in
+3. **Import Project**: Click "New Project"
+4. **Connect GitHub**: Select your repository `SLK-AI-Course-Generator`
+5. **Configure Project**: Vercel will auto-detect it's a Vite project
+
+### **Option B: Via Vercel CLI**
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Login to Vercel
+vercel login
+
+# Deploy from your project directory
+vercel
+```
+
+## ⚙️ **Step 2: Configure Environment Variables**
+
+In your Vercel project dashboard, go to **Settings** → **Environment Variables** and add:
+
+### **Required Variables:**
+
+```bash
+# Database (Use Connection Pooler for Production)
+DATABASE_URL="postgresql://postgres.hpedivtpmdjnwetftiqr:Fs09rn2q1I1xcvUM@aws-0-us-east-2.pooler.supabase.com:6543/postgres"
+
+# AI Services
+API_KEY="your_google_generative_ai_key"
+
+# Email Configuration
+EMAIL="your_email@gmail.com"
+PASSWORD="your_gmail_app_password"
+
+# Payment Services
+STRIPE_SECRET_KEY="sk_test_your_stripe_secret_key"
+FLUTTERWAVE_PUBLIC_KEY="FLWPUBK_your_flutterwave_public_key"
+FLUTTERWAVE_SECRET_KEY="FLWSECK_your_flutterwave_secret_key"
+
+# External APIs
+UNSPLASH_ACCESS_KEY="your_unsplash_access_key"
+
+# Environment
+NODE_ENV="production"
+```
+
+### **Environment Variable Settings:**
+
+- **Production**: ✅ (Deploy to production)
+- **Preview**: ✅ (Deploy to preview branches)
+- **Development**: ✅ (Local development)
+
+## 🏗️ **Step 3: Build Configuration**
+
+### **Framework Preset**: Vite
+### **Build Command**: `npm run vercel-build`
+### **Output Directory**: `dist`
+### **Install Command**: `npm install`
+
+### **Root Directory**: `./` (leave empty)
+
+## 🔧 **Step 4: Advanced Settings**
+
+### **Functions Configuration:**
+- **Max Duration**: 30 seconds
+- **Memory**: 1024 MB (default)
+
+### **Edge Functions**: Disabled (not needed for this project)
+
+## 🚀 **Step 5: Deploy**
+
+1. **Click "Deploy"** in Vercel dashboard
+2. **Wait for build** (usually 2-3 minutes)
+3. **Check deployment logs** for any errors
+4. **Visit your live URL** when deployment completes
+
+## 🌐 **Step 6: Custom Domain (Optional)**
+
+1. **Go to Settings** → **Domains**
+2. **Add your domain** (e.g., `aicourse.yourdomain.com`)
+3. **Configure DNS** as instructed by Vercel
+4. **Wait for SSL certificate** (automatic)
+
+## 📊 **Step 7: Monitor Your Deployment**
+
+### **Vercel Dashboard Features:**
+- **Analytics**: Page views, performance metrics
+- **Functions**: Serverless function logs
+- **Edge Network**: Global CDN performance
+- **Real-time**: Live deployment status
+
+## 🔍 **Step 8: Testing Your Deployment**
+
+### **Test API Endpoints:**
+```bash
+# Health check
+curl https://your-app.vercel.app/api/health
+
+# Create user
+curl -X POST https://your-app.vercel.app/api/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","mName":"Test User","password":"password123","type":"student"}'
+```
+
+### **Test Frontend:**
+- Visit your Vercel URL
+- Test course generation
+- Test user registration/login
+- Test payment flows
+
+## 🛠️ **Troubleshooting**
+
+### **Common Issues:**
+
+1. **Build Failures**
+   ```bash
+   # Check build logs in Vercel dashboard
+   # Common fixes:
+   - Ensure all dependencies are in package.json
+   - Check environment variables are set
+   - Verify Prisma schema is correct
+   ```
+
+2. **Database Connection Issues**
+   ```bash
+   # Use connection pooler for production
+   DATABASE_URL="postgresql://postgres.hpedivtpmdjnwetftiqr:Fs09rn2q1I1xcvUM@aws-0-us-east-2.pooler.supabase.com:6543/postgres"
+   ```
+
+3. **API Route Issues**
+   ```bash
+   # Check function logs in Vercel dashboard
+   # Ensure API routes are in /api folder
+   # Verify CORS settings
+   ```
+
+### **Performance Optimization:**
+
+1. **Enable Edge Caching**
+   ```javascript
+   // In your API routes
+   res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate');
+   ```
+
+2. **Optimize Images**
+   - Use Vercel's Image Optimization
+   - Compress images before upload
+
+3. **Database Optimization**
+   - Use connection pooling
+   - Implement proper indexing
+   - Use Prisma's query optimization
+
+## 🔄 **Step 9: Continuous Deployment**
+
+### **Automatic Deployments:**
+- **Push to main**: Deploys to production
+- **Create PR**: Deploys to preview
+- **Branch deployments**: Automatic for all branches
+
+### **Deployment Hooks:**
+- **Pre-deploy**: Run database migrations
+- **Post-deploy**: Run health checks
+- **Rollback**: Automatic on failure
+
+## 📈 **Step 10: Analytics & Monitoring**
+
+### **Vercel Analytics:**
+- **Web Analytics**: Page views, user behavior
+- **Core Web Vitals**: Performance metrics
+- **Real User Monitoring**: Actual user experience
+
+### **Third-party Monitoring:**
+- **Sentry**: Error tracking
+- **LogRocket**: Session replay
+- **Google Analytics**: Advanced analytics
+
+## 🎯 **Production Checklist**
+
+- [ ] Environment variables configured
+- [ ] Database connection tested
+- [ ] API endpoints working
+- [ ] Frontend functionality verified
+- [ ] Payment integration tested
+- [ ] Email functionality working
+- [ ] Custom domain configured (optional)
+- [ ] SSL certificate active
+- [ ] Analytics configured
+- [ ] Error monitoring set up
+
+## 🚀 **Your Live Application**
+
+Once deployed, your application will be available at:
+```
+https://slk-ai-course-generator.vercel.app
+```
+
+### **Features Available:**
+- ✅ AI-powered course generation
+- ✅ User authentication
+- ✅ Course management
+- ✅ Payment processing
+- ✅ Email notifications
+- ✅ Responsive design
+- ✅ PWA capabilities
+
+## 📞 **Support**
+
+- **Vercel Docs**: [https://vercel.com/docs](https://vercel.com/docs)
+- **Vercel Community**: [https://github.com/vercel/vercel/discussions](https://github.com/vercel/vercel/discussions)
+- **Project Issues**: [https://github.com/Sayless-Digital/SLK-AI-Course-Generator/issues](https://github.com/Sayless-Digital/SLK-AI-Course-Generator/issues)
+
+---
+
+**🎉 Congratulations! Your AI Course Generator is now live on Vercel!** 

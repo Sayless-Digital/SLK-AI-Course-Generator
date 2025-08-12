@@ -17,7 +17,8 @@
     "db:generate": "prisma generate",
     "db:pooler": "echo 'Switch DATABASE_URL to connection pooler in .env'",
     "db:switch-direct": "./scripts/switch-db.sh direct",
-    "db:switch-pooler": "./scripts/switch-db.sh pooler"
+    "db:switch-pooler": "./scripts/switch-db.sh pooler",
+    "vercel-build": "prisma generate && prisma db push && vite build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.1.1",
