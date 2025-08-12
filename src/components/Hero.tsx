@@ -39,7 +39,7 @@ const Hero = () => {
   }, []);
 
   return (
-    <section className="pt-32 pb-16 md:pt-40 md:pb-24 px-6 md:px-10 overflow-hidden relative">
+    <section className="pt-24 pb-16 md:pt-32 md:pb-24 px-6 md:px-10 overflow-hidden relative">
       <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-primary/5 to-transparent" />
 
       <div className="max-w-7xl mx-auto relative">

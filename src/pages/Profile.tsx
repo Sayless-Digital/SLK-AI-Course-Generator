@@ -68,8 +68,8 @@ const Profile = () => {
   }
 
   function redirectLogin() {
-    sessionStorage.clear();
-    navigate("/login");
+          sessionStorage.clear();
+      navigate("/");
   }
 
   async function startDeletion() {

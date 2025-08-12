@@ -1,8 +1,30 @@
 //BRAND
-export const appName = 'AiCourse';
+export const appName = 'SLK | Course Ai';
 export const companyName = 'Spacester';
-export const websiteURL = 'http://localhost:4173';
-export const serverURL = 'http://localhost:5000';
+
+// Dynamic URL configuration
+const getBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    const port = window.location.port;
+    return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
+  }
+  return 'http://localhost:8080';
+};
+
+const getServerURL = () => {
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    // Server runs on port 3001
+    return `${protocol}//${hostname}:3001`;
+  }
+  return 'http://localhost:3001';
+};
+
+export const websiteURL = getBaseURL();
+export const serverURL = getServerURL();
 export const appLogo = 'https://firebasestorage.googleapis.com/v0/b/aicourse-81b42.appspot.com/o/aicouse.png?alt=media&token=7175cdbe-64b4-4fe4-bb6d-b519347ad8af';
 export const razorpayEnabled = true;
 export const paypalEnabled = true;
@@ -59,7 +81,6 @@ export const flutterwavePublicKey = "FLWPUBK_TEST-6ee1faf6460ea587f510a024ac4c2b
 
 //SOCIAL SIGNIN
 export const googleClientId = "150644331076-flt197jvuqg9ohlf6q9rsjk3e3qomjd2.apps.googleusercontent.com";
-export const facebookClientId = "8065327730213158";
 
 //SOCIAL MEDIA
 export const facebookSocialLink = "https://www.youtube.com/@spacester-codecanyon";

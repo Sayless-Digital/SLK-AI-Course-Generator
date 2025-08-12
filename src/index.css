@@ -8,83 +8,83 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 224 71.4% 4.1%;
+    --background: 270 20% 99%;
+    --foreground: 270 50% 8%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
+    --card: 270 15% 99.5%;
+    --card-foreground: 270 50% 8%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
+    --popover: 270 15% 99.5%;
+    --popover-foreground: 270 50% 8%;
 
-    --primary: 211 100% 50%;
-    --primary-foreground: 210 20% 98%;
+    --primary: 270 100% 50%;
+    --primary-foreground: 270 20% 99%;
 
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 220.9 39.3% 11%;
+    --secondary: 270 15% 95%;
+    --secondary-foreground: 270 50% 12%;
 
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%;
+    --muted: 270 15% 95%;
+    --muted-foreground: 270 30% 45%;
 
-    --accent: 220 14.3% 95.9%;
-    --accent-foreground: 220.9 39.3% 11%;
+    --accent: 270 15% 95%;
+    --accent-foreground: 270 50% 12%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive-foreground: 270 20% 99%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 211 100% 50%;
+    --border: 270 15% 92%;
+    --input: 270 15% 92%;
+    --ring: 270 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 270 15% 99%;
+    --sidebar-foreground: 270 30% 25%;
+    --sidebar-primary: 270 50% 10%;
+    --sidebar-primary-foreground: 270 15% 99%;
+    --sidebar-accent: 270 15% 96%;
+    --sidebar-accent-foreground: 270 50% 12%;
+    --sidebar-border: 270 15% 92%;
+    --sidebar-ring: 270 100% 50%;
   }
 
   .dark {
-    --background: 224 71.4% 4.1%;
-    --foreground: 210 20% 98%;
+    --background: 270 50% 8%;
+    --foreground: 270 20% 99%;
 
-    --card: 224 71.4% 4.1%;
-    --card-foreground: 210 20% 98%;
+    --card: 270 45% 10%;
+    --card-foreground: 270 20% 99%;
 
-    --popover: 224 71.4% 4.1%;
-    --popover-foreground: 210 20% 98%;
+    --popover: 270 45% 10%;
+    --popover-foreground: 270 20% 99%;
 
-    --primary: 211 100% 50%;
-    --primary-foreground: 210 20% 98%;
+    --primary: 270 100% 50%;
+    --primary-foreground: 270 20% 99%;
 
-    --secondary: 215 27.9% 16.9%;
-    --secondary-foreground: 210 20% 98%;
+    --secondary: 270 40% 15%;
+    --secondary-foreground: 270 20% 99%;
 
-    --muted: 215 27.9% 16.9%;
-    --muted-foreground: 217.9 10.6% 64.9%;
+    --muted: 270 40% 15%;
+    --muted-foreground: 270 30% 65%;
 
-    --accent: 215 27.9% 16.9%;
-    --accent-foreground: 210 20% 98%;
+    --accent: 270 40% 15%;
+    --accent-foreground: 270 20% 99%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive-foreground: 270 20% 99%;
 
-    --border: 215 27.9% 16.9%;
-    --input: 215 27.9% 16.9%;
-    --ring: 211 100% 50%;
+    --border: 270 40% 15%;
+    --input: 270 40% 15%;
+    --ring: 270 100% 50%;
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 270 45% 12%;
+    --sidebar-foreground: 270 20% 95%;
+    --sidebar-primary: 270 100% 50%;
+    --sidebar-primary-foreground: 270 20% 99%;
+    --sidebar-accent: 270 40% 18%;
+    --sidebar-accent-foreground: 270 20% 95%;
+    --sidebar-border: 270 40% 18%;
+    --sidebar-ring: 270 100% 50%;
   }
 }
 
@@ -117,6 +117,20 @@
   
   .text-shadow-sm {
     text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+}
+
+/* Mobile Sidebar Fix */
+@layer components {
+  /* Override Sheet component's default background for mobile sidebar */
+  [data-sidebar="sidebar"][data-mobile="true"] {
+    background: hsl(var(--sidebar-background)) !important;
+    background-color: hsl(var(--sidebar-background)) !important;
+  }
+  
+  /* Ensure the Sheet content itself has the correct background */
+  [data-sidebar="sidebar"][data-mobile="true"] {
+    background: hsl(var(--sidebar-background)) !important;
   }
 }
 

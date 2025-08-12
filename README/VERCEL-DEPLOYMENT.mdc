@@ -1,10 +1,15 @@
+---
+description: yes
+globs: 
+alwaysApply: false
+---
 # 🚀 Vercel Deployment Guide for SLK AI Course Generator
 
 This guide will help you deploy your AiCourse project to Vercel with full-stack functionality.
 
 ## ✅ **Prerequisites**
 
-- GitHub repository: [https://github.com/Sayless-Digital/SLK-AI-Course-Generator](https://github.com/Sayless-Digital/SLK-AI-Course-Generator)
+- GitHub repository: [https://github.com/Sayless-Digital/SLK-AI-Course-Generator](mdc:https:/github.com/Sayless-Digital/SLK-AI-Course-Generator)
 - Supabase database configured
 - Vercel account (free tier available)
 
@@ -12,7 +17,7 @@ This guide will help you deploy your AiCourse project to Vercel with full-stack 
 
 ### **Option A: Via Vercel Dashboard (Recommended)**
 
-1. **Visit Vercel**: Go to [https://vercel.com](https://vercel.com)
+1. **Visit Vercel**: Go to [https://vercel.com](mdc:https:/vercel.com)
 2. **Sign up/Login**: Create account or sign in
 3. **Import Project**: Click "New Project"
 4. **Connect GitHub**: Select your repository `SLK-AI-Course-Generator`
@@ -222,9 +227,9 @@ https://slk-ai-course-generator.vercel.app
 
 ## 📞 **Support**
 
-- **Vercel Docs**: [https://vercel.com/docs](https://vercel.com/docs)
-- **Vercel Community**: [https://github.com/vercel/vercel/discussions](https://github.com/vercel/vercel/discussions)
-- **Project Issues**: [https://github.com/Sayless-Digital/SLK-AI-Course-Generator/issues](https://github.com/Sayless-Digital/SLK-AI-Course-Generator/issues)
+- **Vercel Docs**: [https://vercel.com/docs](mdc:https:/vercel.com/docs)
+- **Vercel Community**: [https://github.com/vercel/vercel/discussions](mdc:https:/github.com/vercel/vercel/discussions)
+- **Project Issues**: [https://github.com/Sayless-Digital/SLK-AI-Course-Generator/issues](mdc:https:/github.com/Sayless-Digital/SLK-AI-Course-Generator/issues)
 
 ---
 

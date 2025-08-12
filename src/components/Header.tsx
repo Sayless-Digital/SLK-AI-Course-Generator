@@ -6,93 +6,227 @@ import { Link } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import { appName } from '@/constants';
 import Logo from '../res/logo.svg';
+import LoginDialog from './LoginDialog';
+import SignupDialog from './SignupDialog';
+import { Menu, X, Home, Sparkles, DollarSign } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isSignupOpen, setIsSignupOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Helper function to check if a section is active
+  const isActive = (section: string) => activeSection === section;
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      const scrolled = window.scrollY > 10;
+      setIsScrolled(scrolled);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    // Use passive listener for better performance
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleNavigationClick = (section: string) => {
+    setActiveSection(section);
+    // Close mobile menu
+    setIsMobileMenuOpen(false);
+    // Smooth scroll to section
+    const element = document.getElementById(section);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out px-6 md:px-10 py-4",
-        isScrolled ? "bg-glass border-b border-border/40" : "bg-transparent"
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out px-2 h-12 flex items-center shadow-sm",
+        isScrolled ? "bg-background/80 backdrop-blur-sm" : "bg-transparent"
       )}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="max-w-7xl mx-auto flex items-center justify-between w-full">
         <Link to="/" className="flex items-center space-x-2">
-          <div className="h-10 w-10 rounded-md bg-primary flex items-center justify-center">
-            <img src={Logo} alt="Logo" className='h-6 w-6' />
+          <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+            <img src={Logo} alt="Logo" className='h-5 w-5' />
           </div>
-          <span className="font-display font-medium text-lg">{appName}</span>
+          <span className="font-display font-medium text-base">{appName}</span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
-          <a href="#features" className="text-sm font-medium hover:text-primary transition-colors">Features</a>
-          <a href="#how-it-works" className="text-sm font-medium hover:text-primary transition-colors">How It Works</a>
-          <a href="#pricing" className="text-sm font-medium hover:text-primary transition-colors">Pricing</a>
+          <a 
+            href="#features" 
+            className="text-sm font-medium hover:text-primary transition-colors"
+            onClick={() => handleNavigationClick('features')}
+          >
+            Features
+          </a>
+          <a 
+            href="#how-it-works" 
+            className="text-sm font-medium hover:text-primary transition-colors"
+            onClick={() => handleNavigationClick('how-it-works')}
+          >
+            How It Works
+          </a>
+          <a 
+            href="#pricing" 
+            className="text-sm font-medium hover:text-primary transition-colors"
+            onClick={() => handleNavigationClick('pricing')}
+          >
+            Pricing
+          </a>
         </nav>
 
         {/* Call to Actions */}
         <div className="hidden md:flex items-center space-x-4">
           <ThemeToggle />
-          <Link to="/login">
+          <LoginDialog 
+            open={isLoginOpen} 
+            onOpenChange={setIsLoginOpen}
+            onSwitchToSignup={() => {
+              setIsLoginOpen(false);
+              setIsSignupOpen(true);
+            }}
+          >
             <Button variant="ghost" size="sm">Login</Button>
-          </Link>
-          <Link to="/signup">
+          </LoginDialog>
+          <SignupDialog 
+            open={isSignupOpen} 
+            onOpenChange={setIsSignupOpen}
+            onSwitchToLogin={() => {
+              setIsSignupOpen(false);
+              setIsLoginOpen(true);
+            }}
+          >
             <Button size="sm" className="bg-primary hover:bg-primary/90 transition-colors">Get Started</Button>
-          </Link>
+          </SignupDialog>
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile Menu */}
         <div className="md:hidden flex items-center space-x-2">
           <ThemeToggle />
-          <button
-            className="flex flex-col space-y-1.5"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            <span className={cn(
-              "block w-6 h-0.5 bg-foreground transition-transform duration-300",
-              isMobileMenuOpen && "translate-y-2 rotate-45"
-            )}></span>
-            <span className={cn(
-              "block w-6 h-0.5 bg-foreground transition-opacity duration-300",
-              isMobileMenuOpen && "opacity-0"
-            )}></span>
-            <span className={cn(
-              "block w-6 h-0.5 bg-foreground transition-transform duration-300",
-              isMobileMenuOpen && "-translate-y-2 -rotate-45"
-            )}></span>
-          </button>
-        </div>
-      </div>
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 p-0"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent 
+              side="right" 
+              className="w-[300px] sm:w-[400px] p-0 bg-background"
+            >
+              <SheetHeader className="h-12 px-2 border-b border-border/40">
+                <SheetTitle className="flex items-center space-x-2 h-full">
+                  <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+                    <img src={Logo} alt="Logo" className='h-5 w-5' />
+                  </div>
+                  <span className="font-display font-medium text-lg">{appName}</span>
+                </SheetTitle>
+              </SheetHeader>
+              
+              <div className="flex flex-col h-full">
+                {/* Navigation Links */}
+                <nav className="flex-1 px-2 py-6">
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => handleNavigationClick('features')}
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('features') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                      >
+                        <Sparkles className="h-5 w-5" />
+                        <span className="font-medium">Features</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => handleNavigationClick('how-it-works')}
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('how-it-works') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                      >
+                        <Home className="h-5 w-5" />
+                        <span className="font-medium">How It Works</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => handleNavigationClick('pricing')}
+                        className={cn(
+                          "w-full flex items-center space-x-3 text-left px-3 py-2 rounded-md transition-all",
+                          "hover:text-primary hover:bg-accent/80",
+                          isActive('pricing') && "bg-accent text-primary border border-border shadow-sm"
+                        )}
+                      >
+                        <DollarSign className="h-5 w-5" />
+                        <span className="font-medium">Pricing</span>
+                      </button>
+                    </div>
 
-      {/* Mobile Menu */}
-      <div className={cn(
-        "md:hidden fixed inset-x-0 bg-background border-b border-border/40 transition-all duration-300 ease-in-out",
-        isMobileMenuOpen ? "top-[64px] opacity-100" : "-top-full opacity-0"
-      )}>
-        <div className="px-6 py-6 flex flex-col space-y-4">
-          <a href="#features" className="text-base font-medium py-2">Features</a>
-          <a href="#how-it-works" className="text-base font-medium py-2">How It Works</a>
-          <a href="#pricing" className="text-base font-medium py-2">Pricing</a>
-          <div className="flex flex-col space-y-2 pt-2">
-            <Link to="/login">
-              <Button variant="outline" size="sm" className="w-full">Login</Button>
-            </Link>
-            <Link to="/signup">
-              <Button size="sm" className="w-full">Get Started</Button>
-            </Link>
-          </div>
+                    {/* Action Buttons */}
+                    <div className="space-y-3 pt-4 border-t border-border/40">
+                      <LoginDialog 
+                        open={isLoginOpen} 
+                        onOpenChange={(open) => {
+                          setIsLoginOpen(open);
+                          if (open) setIsMobileMenuOpen(false);
+                        }}
+                        onSwitchToSignup={() => {
+                          setIsLoginOpen(false);
+                          setIsSignupOpen(true);
+                          setIsMobileMenuOpen(false);
+                        }}
+                      >
+                        <Button variant="outline" size="sm" className="w-full">Login</Button>
+                      </LoginDialog>
+                      <SignupDialog 
+                        open={isSignupOpen} 
+                        onOpenChange={(open) => {
+                          setIsSignupOpen(open);
+                          if (open) setIsMobileMenuOpen(false);
+                        }}
+                        onSwitchToLogin={() => {
+                          setIsSignupOpen(false);
+                          setIsLoginOpen(true);
+                          setIsMobileMenuOpen(false);
+                        }}
+                      >
+                        <Button size="sm" className="w-full">Get Started</Button>
+                      </SignupDialog>
+                    </div>
+                  </div>
+                </nav>
+
+                {/* Footer */}
+                <div className="px-2 py-4 border-t border-border/40">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Theme</span>
+                    <ThemeToggle />
+                  </div>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>

@@ -5,39 +5,39 @@
 @import './partials/zoom.css';
 
 :root {
-  --mt-overlay: rgba(251, 251, 251, 0.75);
+  --mt-overlay: rgba(253, 252, 254, 0.75);
   --mt-transparent-foreground: rgba(0, 0, 0, 0.4);
-  --mt-bg-secondary: rgba(251, 251, 251, 0.8);
-  --mt-code-background: #082b781f;
+  --mt-bg-secondary: rgba(253, 252, 254, 0.8);
+  --mt-code-background: #8b5cf61f;
   --mt-code-color: #d4d4d4;
   --mt-secondary: #9d9d9f;
-  --mt-pre-background: #ececec;
-  --mt-pre-border: #e0e0e0;
+  --mt-pre-background: #f8f7ff;
+  --mt-pre-border: #e9e5ff;
   --mt-pre-color: #2f2f31;
-  --mt-hr: #dcdcdc;
-  --mt-drag-handle-hover: #5c5c5e;
+  --mt-hr: #e9e5ff;
+  --mt-drag-handle-hover: #8b5cf6;
 
-  --mt-accent-bold-blue: #05c;
+  --mt-accent-bold-blue: #8b5cf6;
   --mt-accent-bold-teal: #206a83;
   --mt-accent-bold-green: #216e4e;
   --mt-accent-bold-orange: #a54800;
   --mt-accent-bold-red: #ae2e24;
-  --mt-accent-bold-purple: #5e4db2;
+  --mt-accent-bold-purple: #8b5cf6;
 
   --mt-accent-gray: #758195;
-  --mt-accent-blue: #1d7afc;
+  --mt-accent-blue: #8b5cf6;
   --mt-accent-teal: #2898bd;
   --mt-accent-green: #22a06b;
   --mt-accent-orange: #fea362;
   --mt-accent-red: #c9372c;
-  --mt-accent-purple: #8270db;
+  --mt-accent-purple: #8b5cf6;
 
-  --mt-accent-blue-subtler: #cce0ff;
+  --mt-accent-blue-subtler: #f3f0ff;
   --mt-accent-teal-subtler: #c6edfb;
   --mt-accent-green-subtler: #baf3db;
   --mt-accent-yellow-subtler: #f8e6a0;
   --mt-accent-red-subtler: #ffd5d2;
-  --mt-accent-purple-subtler: #dfd8fd;
+  --mt-accent-purple-subtler: #f3f0ff;
 
   --hljs-string: #aa430f;
   --hljs-title: #b08836;
@@ -51,39 +51,39 @@
 }
 
 .dark {
-  --mt-overlay: rgba(31, 32, 35, 0.75);
+  --mt-overlay: rgba(30, 25, 45, 0.75);
   --mt-transparent-foreground: rgba(255, 255, 255, 0.4);
-  --mt-bg-secondary: rgba(31, 32, 35, 0.8);
-  --mt-code-background: #ffffff13;
+  --mt-bg-secondary: rgba(30, 25, 45, 0.8);
+  --mt-code-background: #8b5cf613;
   --mt-code-color: #2c2e33;
   --mt-secondary: #595a5c;
-  --mt-pre-background: #080808;
-  --mt-pre-border: #23252a;
+  --mt-pre-background: #1a1625;
+  --mt-pre-border: #2d1f3d;
   --mt-pre-color: #e3e4e6;
-  --mt-hr: #26282d;
-  --mt-drag-handle-hover: #969799;
+  --mt-hr: #2d1f3d;
+  --mt-drag-handle-hover: #8b5cf6;
 
-  --mt-accent-bold-blue: #85b8ff;
+  --mt-accent-bold-blue: #a78bfa;
   --mt-accent-bold-teal: #9dd9ee;
   --mt-accent-bold-green: #7ee2b8;
   --mt-accent-bold-orange: #fec195;
   --mt-accent-bold-red: #fd9891;
-  --mt-accent-bold-purple: #b8acf6;
+  --mt-accent-bold-purple: #a78bfa;
 
   --mt-accent-gray: #738496;
-  --mt-accent-blue: #388bff;
+  --mt-accent-blue: #8b5cf6;
   --mt-accent-teal: #42b2d7;
   --mt-accent-green: #2abb7f;
   --mt-accent-orange: #a54800;
   --mt-accent-red: #e2483d;
-  --mt-accent-purple: #8f7ee7;
+  --mt-accent-purple: #8b5cf6;
 
-  --mt-accent-blue-subtler: #09326c;
+  --mt-accent-blue-subtler: #2d1f3d;
   --mt-accent-teal-subtler: #164555;
   --mt-accent-green-subtler: #164b35;
   --mt-accent-yellow-subtler: #533f04;
   --mt-accent-red-subtler: #5d1f1a;
-  --mt-accent-purple-subtler: #352c63;
+  --mt-accent-purple-subtler: #2d1f3d;
 
   --hljs-string: #da936b;
   --hljs-title: #f1d59d;

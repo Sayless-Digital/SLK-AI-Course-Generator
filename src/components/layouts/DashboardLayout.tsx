@@ -38,23 +38,37 @@ const DashboardLayout = () => {
 
   useEffect(() => {
     if (sessionStorage.getItem('uid') === null) {
-      window.location.href = websiteURL + '/login';
+      window.location.href = websiteURL + '/';
     }
-    async function dashboardData() {
-      const postURL = serverURL + `/api/dashboard`;
-      const response = await axios.post(postURL);
-      sessionStorage.setItem('adminEmail', response.data.admin.email);
-      if (response.data.admin.email === sessionStorage.getItem('email')) {
-        setAdmin(true);
+    
+    async function checkAdminStatus() {
+      try {
+        const userEmail = sessionStorage.getItem('email');
+        const userType = sessionStorage.getItem('type');
+        
+        // Check if user has admin type
+        if (userType === 'admin') {
+          setAdmin(true);
+          return;
+        }
+
+        // Check if user is in admin table
+        const postURL = serverURL + `/api/getadmins`;
+        const response = await axios.get(postURL);
+        const admins = response.data.admins;
+        
+        const isAdmin = admins.some(admin => admin.email === userEmail);
+        
+        if (isAdmin) {
+          setAdmin(true);
+          sessionStorage.setItem('adminEmail', userEmail);
+        }
+      } catch (error) {
+        console.error('Admin status check error:', error);
       }
     }
-    if (sessionStorage.getItem('adminEmail')) {
-      if (sessionStorage.getItem('adminEmail') === sessionStorage.getItem('email')) {
-        setAdmin(true);
-      }
-    } else {
-      dashboardData();
-    }
+
+    checkAdminStatus();
   }, []);
 
   useEffect(() => {
@@ -77,21 +91,17 @@ const DashboardLayout = () => {
 
   function Logout() {
     sessionStorage.clear();
-    toast({
-      title: "Logged Out",
-      description: "You have logged out successfully",
-    });
-    window.location.href = websiteURL + '/login';
+    window.location.href = websiteURL + '/';
   }
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-to-br from-background to-muted/30">
         <Sidebar className="border-r border-border/40">
-          <SidebarHeader className="border-b border-border/40">
-            <Link to="/dashboard" className="flex items-center space-x-2 px-4 py-3">
+          <SidebarHeader className="border-b border-border/40 h-12">
+            <Link to="/dashboard" className="flex items-center space-x-2 px-2 h-full">
               <div className="h-8 w-8 rounded-md bg-primary from-primary flex items-center justify-center">
-                <img src={Logo} alt="Logo" className='h-6 w-6' />
+                <img src={Logo} alt="Logo" className='h-5 w-5' />
               </div>
               <span className="font-display text-lg font-bold bg-primary text-gradient">{appName}</span>
             </Link>
@@ -154,7 +164,7 @@ const DashboardLayout = () => {
 
             <SidebarGroup>
               <SidebarGroupContent>
-                <div className="px-2">
+                <div>
                   <Button
                     className="w-full bg-gradient-to-r from-primary to-indigo-500 hover:from-indigo-500 hover:to-primary shadow-md transition-all"
                     size="sm"
@@ -170,7 +180,7 @@ const DashboardLayout = () => {
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarFooter className="border-t border-border/40">
+          <SidebarFooter className="border-t border-border/40 px-2">
             <SidebarMenu>
               {installPrompt && (
                 <SidebarMenuItem>
@@ -211,13 +221,18 @@ const DashboardLayout = () => {
           <SidebarRail />
         </Sidebar>
 
-        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+        <main className="flex-1 overflow-auto p-2">
           {isMobile && (
-            <div className="flex items-center mb-6 bg-background/80 backdrop-blur-sm rounded-lg p-2 shadow-sm">
+            <div className="flex items-center mb-6 bg-background rounded-lg shadow-sm h-12 px-2">
               <SidebarTrigger className="mr-2">
                 <Menu className="h-6 w-6" />
               </SidebarTrigger>
-              <h1 className="text-xl font-semibold bg-gradient-to-r from-primary to-indigo-500 text-gradient">{appName}</h1>
+              <div className="flex items-center space-x-2">
+                <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center">
+                  <img src={Logo} alt="Logo" className='h-4 w-4' />
+                </div>
+                <h1 className="text-xl font-semibold bg-gradient-to-r from-primary to-indigo-500 text-gradient">{appName}</h1>
+              </div>
               <div className="ml-auto">
                 <ThemeToggle />
               </div>

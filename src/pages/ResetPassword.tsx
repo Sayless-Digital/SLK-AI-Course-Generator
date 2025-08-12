@@ -12,6 +12,7 @@ import { ArrowLeft, Key, AlertTriangle, ArrowRight, Check, Eye, EyeOff } from 'l
 import { appLogo, appName, companyName, serverURL, websiteURL } from '@/constants';
 import Logo from '../res/logo.svg';
 import axios from 'axios';
+import LoginDialog from '../components/LoginDialog';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -26,7 +27,7 @@ const ResetPassword = () => {
   const { token } = useParams();
 
   function redirectSignIn() {
-    navigate("/login");
+    navigate("/");
   }
 
   function redirectHome() {
@@ -117,7 +118,7 @@ const ResetPassword = () => {
   };
 
   async function sendEmail(mEmail: string) {
-    const signInLink = websiteURL + '/login';
+    const signInLink = websiteURL + '/dashboard';
     try {
       const dataToSend = {
         subject: `${appName} Password Updated`,
@@ -176,8 +177,8 @@ const ResetPassword = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <Link to="/" className="inline-flex items-center space-x-2">
-            <div className="h-10 w-10 rounded-md bg-primary flex items-center justify-center">
-              <img src={Logo} alt="Logo" className='h-6 w-6' />
+            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+              <img src={Logo} alt="Logo" className='h-5 w-5' />
             </div>
             <span className="font-display font-medium text-lg">{appName}</span>
           </Link>
@@ -271,13 +272,14 @@ const ResetPassword = () => {
           </CardContent>
 
           <CardFooter className="flex justify-center border-t p-6">
-            <Link
-              to="/login"
-              className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to login
-            </Link>
+            <LoginDialog>
+              <span
+                className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to login
+              </span>
+            </LoginDialog>
           </CardFooter>
         </Card>
       </div>

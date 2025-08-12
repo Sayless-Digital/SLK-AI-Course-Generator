@@ -50,29 +50,52 @@ const AdminLayout = () => {
   }
 
   useEffect(() => {
-    async function dashboardData() {
-      const postURL = serverURL + `/api/dashboard`;
-      const response = await axios.post(postURL);
-      sessionStorage.setItem('adminEmail', response.data.admin.email);
-      if (response.data.admin.email !== sessionStorage.getItem('email')) {
+    async function checkAdminAccess() {
+      try {
+        // Check if user is logged in
+        const userEmail = sessionStorage.getItem('email');
+        const userType = sessionStorage.getItem('type');
+        
+        if (!userEmail) {
+          redirectHome();
+          return;
+        }
+
+        // Check if user has admin type
+        if (userType === 'admin') {
+          // User has admin privileges, allow access
+          return;
+        }
+
+        // Check if user is in admin table
+        const postURL = serverURL + `/api/getadmins`;
+        const response = await axios.get(postURL);
+        const admins = response.data.admins;
+        
+        const isAdmin = admins.some(admin => admin.email === userEmail);
+        
+        if (!isAdmin) {
+          redirectHome();
+          return;
+        }
+
+        // User is in admin table, allow access
+        sessionStorage.setItem('adminEmail', userEmail);
+      } catch (error) {
+        console.error('Admin access check error:', error);
         redirectHome();
       }
     }
-    if (sessionStorage.getItem('adminEmail')) {
-      if (sessionStorage.getItem('adminEmail') !== sessionStorage.getItem('email')) {
-        redirectHome();
-      }
-    } else {
-      dashboardData();
-    }
-  });
+
+    checkAdminAccess();
+  }, []);
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-to-br from-background to-muted/20">
         <Sidebar className="border-r border-border/40">
-          <SidebarHeader className="border-b border-border/40">
-            <Link to="/admin" className="flex items-center space-x-2 px-4 py-3">
+          <SidebarHeader className="border-b border-border/40 h-12">
+            <Link to="/admin" className="flex items-center space-x-2 px-2 h-full">
               <div className="h-8 w-8 rounded-md bg-primary from-primary flex items-center justify-center">
                 <img src={Logo} alt="Logo" className='h-5 w-5' />
               </div>
@@ -201,7 +224,7 @@ const AdminLayout = () => {
             </SidebarMenu>
           </SidebarContent>
 
-          <SidebarFooter className="border-t border-border/40">
+          <SidebarFooter className="border-t border-border/40 px-2">
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Theme">
@@ -216,13 +239,18 @@ const AdminLayout = () => {
           <SidebarRail />
         </Sidebar>
 
-        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+        <main className="flex-1 overflow-auto p-2">
           {isMobile && (
-            <div className="flex items-center mb-6 bg-background/80 backdrop-blur-sm rounded-lg p-2 shadow-sm">
+            <div className="flex items-center mb-6 bg-background rounded-lg shadow-sm h-12 px-2">
               <SidebarTrigger className="mr-2">
                 <Menu className="h-6 w-6" />
               </SidebarTrigger>
-              <h1 className="text-xl font-semibold">Admin Panel</h1>
+              <div className="flex items-center space-x-2">
+                <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center">
+                  <img src={Logo} alt="Logo" className='h-4 w-4' />
+                </div>
+                <h1 className="text-xl font-semibold">Admin Panel</h1>
+              </div>
               <div className="ml-auto">
                 <ThemeToggle />
               </div>

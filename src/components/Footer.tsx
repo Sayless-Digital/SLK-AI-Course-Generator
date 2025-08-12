@@ -12,8 +12,8 @@ const Footer = () => {
           {/* Brand column */}
           <div className="lg:col-span-2">
             <a href="#" className="flex items-center space-x-2 mb-4">
-              <div className="h-10 w-10 rounded-md bg-primary flex items-center justify-center">
-                <img src={Logo} alt="Logo" className='h-6 w-6' />
+              <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+                <img src={Logo} alt="Logo" className='h-5 w-5' />
               </div>
               <span className="font-display font-medium text-lg">{appName}</span>
             </a>
